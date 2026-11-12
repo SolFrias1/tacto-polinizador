@@ -35,7 +35,7 @@ tgt('audio.filtro', 'Audio', 'filtro ambiental del ecosistema (Hz)', 200, 12000,
 
 // ============================ ECOSISTEMA SONORO ======================
 const AUDIO_DEFS = {
-  bosque: { url: 'audio_bee/bosque.m4a', fallback: 'audio_bee/bosque.flac', loop: true, baseVol: 0.85 },
+  bosque: { url: 'audio_bee/bosque.m4a', fallback: 'audio_bee/bosque.wav', loop: true, baseVol: 0.95 },
   palpito: { url: 'audio_bee/palpito.m4a', fallback: 'audio_bee/palpito.wav', loop: true, baseVol: 0.85 },
   abeja: { url: 'audio_bee/abeja.m4a', fallback: 'audio_bee/abeja.wav', loop: true, baseVol: 1.0 },
   mala_abeja: { url: 'audio_bee/mala_abeja.mp3', loop: true, baseVol: 0.88 },
@@ -113,7 +113,11 @@ async function initSoundscape() {
     const g = c.createGain();
     g.gain.value = k === 'bosque' ? def.baseVol : 0;
     s.connect(g);
-    g.connect(A.filt);
+    if (k === 'bosque') {
+      g.connect(A.master);
+    } else {
+      g.connect(A.filt);
+    }
     s.start();
     A.nodes[k] = s;
     A.gains[k] = g;
@@ -121,7 +125,7 @@ async function initSoundscape() {
   
   const bBadge = $('#b-bosque');
   if (bBadge) bBadge.classList.add('active');
-  $('#audioBtn').textContent = 'Ecosistema Acústico Activo';
+  $('#audioBtn').textContent = '🍃 Ecosistema Acústico: Activo';
   $('#audioBtn').classList.remove('primary');
 }
 
@@ -277,39 +281,54 @@ function getDisplacement(touchX, touchY, factorMult = 1) {
   };
 }
 
-// Pintado Orgánico Suave por el Enjambre
-function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis) {
+// Pintado Orgánico y Fecundación Viva por el Enjambre
+function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.0) {
   if (!floriImg.complete) return;
   
   lgx.save();
-  const rad = 22 + Math.random() * 26;
-  const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad);
+  const rad = (32 + Math.random() * 32) * radMult;
 
   if (isNecrosis) {
     lgx.globalCompositeOperation = 'source-over';
-    grad.addColorStop(0, 'rgba(12, 4, 3, 0.45)');
-    grad.addColorStop(0.7, 'rgba(12, 4, 3, 0.2)');
-    grad.addColorStop(1, 'rgba(12, 4, 3, 0)');
+    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.3);
+    grad.addColorStop(0, 'rgba(18, 5, 3, 0.9)');
+    grad.addColorStop(0.6, 'rgba(45, 12, 6, 0.55)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     lgx.fillStyle = grad;
     lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.3, 0, Math.PI * 2);
     lgx.fill();
   } else {
+    // 1. Halo de bioluminiscencia viva en el espectro del polen
     lgx.globalCompositeOperation = 'lighter';
-    lgx.globalAlpha = 0.085;
+    lgx.globalAlpha = 0.55;
+    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.4);
+    const flowerHue = (P.colorExotico + Math.random() * 35) % 360;
+    grad.addColorStop(0, `hsla(${flowerHue}, 100%, 75%, 0.85)`);
+    grad.addColorStop(0.5, `hsla(${(flowerHue + 35) % 360}, 95%, 55%, 0.45)`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    lgx.fillStyle = grad;
+    lgx.beginPath();
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.4, 0, Math.PI * 2);
+    lgx.fill();
+
+    // 2. Flor fotográfica nítida y colorida
+    lgx.globalAlpha = 0.78;
     lgx.beginPath();
     lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
     lgx.clip();
     
-    // Mosaico botánico continuo para no estirar la imagen
     const pat = lgx.createPattern(floriImg, 'repeat');
     lgx.fillStyle = pat;
     lgx.fillRect(targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
+
     totalBlooms++;
+    // Evolución cromática viva por cada fecundación
+    P.colorExotico = (P.colorExotico + 0.35) % 360;
   }
   lgx.restore();
 
-  const coverage = Math.min(100, Math.round((totalBlooms / 1500) * 100));
+  const coverage = Math.min(100, Math.round((totalBlooms / 800) * 100));
   $('#statCoverage').textContent = coverage + '%';
   if (coverage >= 80 && !isClimax) {
     triggerClimax();
@@ -466,6 +485,19 @@ function update3DWorld(now) {
 
   const isSwarming = pollinators.length > 0 || isClimax;
 
+  // Fecundación continua directa por teléfonos móviles tocando la pantalla
+  if (!isClimax) {
+    for (const pol of pollinators) {
+      if (pol.isDown && pol.id !== 'raton' && Math.random() > 0.4) {
+        const sx = pol.tx * partCv.width;
+        const sy = pol.ty * partCv.height;
+        const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
+        const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
+        swarmDepositPollen(wx, wy, pol.td > 78, 1.25);
+      }
+    }
+  }
+
   for (let i = 0; i < SWARM.length; i++) {
     const b = SWARM[i];
 
@@ -499,12 +531,12 @@ function update3DWorld(now) {
       b.vx *= 0.94;
       b.vy *= 0.94;
 
-      // SOLO depositar polen si el usuario está tocando / presionando activamente
-      if (targetIsDown && dist < 85 && Math.random() > 0.38 && !isClimax) {
+      // Depositar polen si el polinizador está presionando y la abeja pasa cerca
+      if (targetIsDown && dist < 125 && Math.random() > 0.25 && !isClimax) {
         const isNecrotic = P.necrosis > 0.6 || isRightClick;
-        const wx = (b.x / partCv.width) * lifeCv.width;
-        const wy = (b.y / partCv.height) * lifeCv.height;
-        swarmDepositPollen(wx, wy, isNecrotic);
+        const wx = 1024 + (b.x - partCv.width / 2) / P.zoom;
+        const wy = 1024 + (b.y - partCv.height / 2) / P.zoom;
+        swarmDepositPollen(wx, wy, isNecrotic, 0.85);
         b.charge = 1;
       }
     } else {
@@ -642,13 +674,18 @@ document.querySelectorAll('.view-btn').forEach(btn => {
       simulatedZoom = 0.75;
       P.zoom = 0.75;
       $('#stageWrap').classList.remove('uv-active');
+      if (A.filt && A.ctx) A.filt.frequency.setTargetAtTime(6500, A.ctx.currentTime, 0.15);
     } else if (view === 'fpv') {
-      simulatedZoom = 1.05;
-      P.zoom = 1.05;
+      simulatedZoom = 1.15;
+      P.zoom = 1.15;
       $('#stageWrap').classList.remove('uv-active');
+      if (A.filt && A.ctx) A.filt.frequency.setTargetAtTime(8500, A.ctx.currentTime, 0.15);
     } else if (view === 'uv') {
-      $('#stageWrap').classList.toggle('uv-active');
-      P.colorExotico = 230;
+      simulatedZoom = 2.15;
+      P.zoom = 2.15;
+      $('#stageWrap').classList.add('uv-active');
+      P.colorExotico = 220;
+      if (A.filt && A.ctx) A.filt.frequency.setTargetAtTime(11800, A.ctx.currentTime, 0.15);
     }
   };
 });
@@ -659,13 +696,14 @@ stage.addEventListener('wheel', e => {
   P.zoom = simulatedZoom;
   document.querySelectorAll('.view-btn').forEach(b => {
     const v = b.dataset.view;
-    if (v === 'satellite') b.classList.toggle('active', P.zoom < 0.9);
-    if (v === 'fpv') b.classList.toggle('active', P.zoom >= 0.9 && !$('#stageWrap').classList.contains('uv-active'));
+    if (v === 'satellite') b.classList.toggle('active', P.zoom < 0.95 && !$('#stageWrap').classList.contains('uv-active'));
+    if (v === 'fpv') b.classList.toggle('active', P.zoom >= 0.95 && P.zoom < 1.7 && !$('#stageWrap').classList.contains('uv-active'));
+    if (v === 'uv') b.classList.toggle('active', $('#stageWrap').classList.contains('uv-active') || P.zoom >= 1.7);
   });
 }, { passive: false });
 
-stage.addEventListener('pointerdown', async e => {
-  await ensureAudio();
+stage.addEventListener('pointerdown', e => {
+  ensureAudio().catch(() => {});
   if (!$('#mouseDev').checked || isClimax) return;
   mouseIsDown = true;
   isRightClick = e.button === 2 || e.shiftKey || e.altKey;
@@ -675,6 +713,13 @@ stage.addEventListener('pointerdown', async e => {
   mouseCoords.y = clamp((e.clientY - r.top) / r.height);
   lastMoveTime = performance.now();
   lastMouseMoveTime = performance.now();
+
+  // Fecundación visual inmediata y viva en el punto de clic
+  const sx = mouseCoords.x * partCv.width;
+  const sy = mouseCoords.y * partCv.height;
+  const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
+  const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
+  swarmDepositPollen(wx, wy, isRightClick, 1.35);
 });
 
 stage.addEventListener('pointermove', e => {
@@ -690,6 +735,15 @@ stage.addEventListener('pointermove', e => {
   mouseCamRoll = nx * 42;
   mouseCamPitch = ny * 30;
   lastMouseMoveTime = performance.now();
+
+  // Si se está arrastrando / presionando con el ratón: florecer en cada paso de la caricia
+  if (mouseIsDown && !isClimax) {
+    const sx = mouseCoords.x * partCv.width;
+    const sy = mouseCoords.y * partCv.height;
+    const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
+    const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
+    swarmDepositPollen(wx, wy, isRightClick, 1.1);
+  }
 });
 
 stage.addEventListener('pointerleave', () => {

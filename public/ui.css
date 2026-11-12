@@ -139,13 +139,14 @@ section.interactive-arena {
   transform-style: preserve-3d; will-change: transform; pointer-events: none; 
 }
 
-/* Plano de flores con escala gigante y máscara orgánica: sin límites rectangulares */
+/* Plano de flores centrado con escala amplia y máscara orgánica: sin límites rectangulares */
 #groundPlane { 
-  position: absolute; left: -100%; top: -100%; width: 300%; height: 300%; 
+  position: absolute; left: 50%; top: 50%; width: 2048px; height: 2048px; 
+  margin-left: -1024px; margin-top: -1024px;
   transform-origin: 50% 50%; transform: rotateX(20deg) translateZ(-10px); 
   transform-style: preserve-3d; will-change: transform; 
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 72%, transparent 97%);
-  mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 72%, transparent 97%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 75%, transparent 98%);
+  mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 75%, transparent 98%);
 }
 
 #meadowBase, #meadowLife { 
@@ -185,10 +186,14 @@ section.interactive-arena {
 
 /* MODO ESPECTRO ULTRAVIOLETA (Visión de la Abeja según Jakob von Uexküll) */
 .uv-active #meadowLife {
-  filter: hue-rotate(235deg) saturate(175%) contrast(125%) brightness(110%) !important;
+  filter: hue-rotate(220deg) saturate(240%) contrast(140%) brightness(130%) !important;
 }
 .uv-active #meadowBase {
-  filter: grayscale(35%) sepia(75%) hue-rotate(210deg) brightness(38%) !important;
+  filter: grayscale(10%) sepia(85%) hue-rotate(205deg) brightness(46%) contrast(125%) !important;
+}
+.uv-active#stageWrap {
+  background: radial-gradient(circle at 50% 25%, #080f33, #01030e 94%) !important;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.95), 0 0 65px rgba(138, 43, 226, 0.4) !important;
 }
 
 @keyframes petalBreatheLeft {
