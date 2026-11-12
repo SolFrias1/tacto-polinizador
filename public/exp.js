@@ -35,7 +35,7 @@ tgt('audio.filtro', 'Audio', 'filtro ambiental del ecosistema (Hz)', 200, 12000,
 
 // ============================ ECOSISTEMA SONORO ======================
 const AUDIO_DEFS = {
-  bosque: { url: 'audio_bee/bosque.m4a', fallback: 'audio_bee/bosque.flac', loop: true, baseVol: 0.42 },
+  bosque: { url: 'audio_bee/bosque.m4a', fallback: 'audio_bee/bosque.flac', loop: true, baseVol: 0.85 },
   palpito: { url: 'audio_bee/palpito.m4a', fallback: 'audio_bee/palpito.wav', loop: true, baseVol: 0.85 },
   abeja: { url: 'audio_bee/abeja.m4a', fallback: 'audio_bee/abeja.wav', loop: true, baseVol: 1.0 },
   mala_abeja: { url: 'audio_bee/mala_abeja.mp3', loop: true, baseVol: 0.88 },
@@ -374,10 +374,10 @@ function update3DWorld(now) {
   }
 
   // Perspectiva 3D con descenso natural a ras del suelo
-  const rotX = isSatellite ? 12 : (isMacro ? 11 + curCamPitch * 0.1 : 20 + curCamPitch * 0.2);
+  const rotX = isSatellite ? 12 : (isMacro ? 8 + curCamPitch * 0.08 : 20 + curCamPitch * 0.2);
   const rotZ = -curCamRoll * 0.2;
   const transX = -curCamRoll * 2.5;
-  const transY = -curCamPitch * 1.5 + (isMacro ? (P.zoom - 1.35) * 145 : 0);
+  const transY = -curCamPitch * 1.5 + (isMacro ? (P.zoom - 1.35) * 165 : 0);
   const scale = P.zoom;
 
   groundPlane.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${transX}px, ${transY}px, 0) scale(${scale})`;
@@ -582,15 +582,15 @@ document.querySelectorAll('.view-btn').forEach(btn => {
       simulatedZoom = 1.05;
       P.zoom = 1.05;
     } else if (view === 'macro') {
-      simulatedZoom = 2.45;
-      P.zoom = 2.45;
+      simulatedZoom = 3.4;
+      P.zoom = 3.4;
     }
   };
 });
 
 stage.addEventListener('wheel', e => {
   e.preventDefault();
-  simulatedZoom = clamp(simulatedZoom - e.deltaY * 0.0018, 0.65, 2.9);
+  simulatedZoom = clamp(simulatedZoom - e.deltaY * 0.0022, 0.65, 4.2);
   P.zoom = simulatedZoom;
   document.querySelectorAll('.view-btn').forEach(b => {
     const v = b.dataset.view;
