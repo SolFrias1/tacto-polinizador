@@ -524,14 +524,14 @@ function update3DWorld(now) {
     if (b.y < -30) b.y += partCv.height + 60;
     if (b.y > partCv.height + 30) b.y -= partCv.height + 60;
 
-    const rad = b.size * (0.8 + 0.4 / b.z) * (isMacro ? 2.2 : 1);
+    const rad = b.size * (0.8 + 0.4 / b.z) * (P.zoom > 1.35 ? 1.5 : 1);
     const alpha = clamp(0.25 + (1 / b.z) * 0.45, 0.15, 0.9);
 
     pgx.beginPath();
     pgx.arc(b.x, b.y, rad, 0, Math.PI * 2);
     const hue = b.charge > 0 ? (uvHue + 55) % 360 : (b.z > 1.5 ? 55 : 45);
     pgx.fillStyle = `hsla(${hue}, 95%, ${b.charge > 0 ? '75%' : '60%'}, ${alpha})`;
-    if (isMacro && b.z < 1.2) {
+    if ((isUV || P.zoom > 1.35) && b.z < 1.2) {
       pgx.shadowBlur = 12;
       pgx.shadowColor = `hsla(${hue}, 100%, 70%, 0.65)`;
     } else {
