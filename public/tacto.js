@@ -165,8 +165,12 @@
     pick() {
       if (this.sel !== 'auto') return this.devices[this.sel] || null;
       let best = null;
-      for (const d of Object.values(this.devices)) if (d.online && (!best || d.last > best.last)) best = d;
-      return best || Object.values(this.devices)[0] || null;
+      for (const d of Object.values(this.devices)) {
+        if (!d.online || d.id === 'raton') continue;
+        if (!best || d.last > best.last) best = d;
+      }
+      if (best) return best;
+      return (this.devices['raton'] && this.devices['raton'].online ? this.devices['raton'] : null) || Object.values(this.devices)[0] || null;
     }
     get(name, dev) { const d = dev ? this.devices[dev] : this.pick(); return d && name in d.ch ? d.ch[name] : null; }
   }

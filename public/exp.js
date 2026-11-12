@@ -348,26 +348,25 @@ function triggerClimax() {
 // Polinizadores activos
 function getActivePollinators() {
   const list = [];
-  
-  for (const dev of Object.values(tacto.devices)) {
-    if (!dev.online || dev.id === 'raton') continue;
+  const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
+
+  for (const dev of realPhones) {
     const isDown = (dev.ch['touch.down'] || 0) >= 0.5;
-    if (isDown) {
-      list.push({
-        id: dev.id, name: dev.name,
-        tx: dev.ch['touch.x'] ?? 0.5,
-        ty: dev.ch['touch.y'] ?? 0.5,
-        td: dev.ch['touch.d'] || 40,
-        tn: dev.ch['touch.n'] || 1,
-        gy: dev.ch['ang.g'],
-        gx: dev.ch['ang.b'],
-        isDown: true
-      });
-    }
+    list.push({
+      id: dev.id,
+      name: dev.name || 'teléfono',
+      tx: dev.ch['touch.x'] ?? 0.5,
+      ty: dev.ch['touch.y'] ?? 0.5,
+      td: dev.ch['touch.d'] || (isDown ? 45 : 25),
+      tn: dev.ch['touch.n'] || (isDown ? 1 : 0),
+      gy: dev.ch['ang.g'],
+      gx: dev.ch['ang.b'],
+      isDown
+    });
   }
 
-  // Ratón de laptop (si está habilitado)
-  if ($('#mouseDev').checked && !isClimax) {
+  // Ratón de laptop: SOLO si NO hay teléfonos reales conectados y está habilitado
+  if (realPhones.length === 0 && $('#mouseDev').checked && !isClimax) {
     if (mouseIsDown) {
       list.push({
         id: 'raton', name: 'laptop',
@@ -407,13 +406,8 @@ function update3DWorld(now) {
     const gy = dev.ch['ang.g'];
     const gx = dev.ch['ang.b'];
     if (gy != null && gx != null) {
-      const pRoll = clamp(gy * 0.95, -45, 45);
-      const pPitch = clamp((gx - 35) * 0.85, -35, 35);
-      if (Math.abs(pRoll - phoneCamRoll) > 0.3 || Math.abs(pPitch - phoneCamPitch) > 0.3) {
-        lastPhoneMoveTime = now;
-      }
-      phoneCamRoll = pRoll;
-      phoneCamPitch = pPitch;
+      phoneCamRoll = clamp(gy * 0.95, -45, 45);
+      phoneCamPitch = clamp((gx - 35) * 0.85, -35, 35);
       hasPhoneActive = true;
     }
     // Zoom táctil desde el teléfono con 2 dedos
@@ -423,23 +417,18 @@ function update3DWorld(now) {
     }
   }
 
-  // Prioridad simbiótica de navegación (Ratón de laptop + Teléfono como prótesis):
-  // 1. Si el cursor se mueve en el lienzo o está arrastrándose, responde directamente al ratón.
-  // 2. Si el teléfono se inclina en el aire, responde al teléfono.
-  // 3. Permite que ambos coexistan sin bloquearse.
+  // Prioridad absoluta al teléfono como prótesis insectil:
+  // 1. Si hay un teléfono conectado, gobierna la inclinación en todo momento.
+  // 2. El ratón de laptop es solo un fallback de prueba si no hay teléfono.
   const isMouseActive = mouseInside || mouseIsDown || (now - lastMouseMoveTime < 2200);
-  const isPhoneRecentlyMoved = hasPhoneActive && (now - lastPhoneMoveTime < 2000);
 
   if (!isClimax) {
-    if (isPhoneRecentlyMoved && !mouseInside && !mouseIsDown) {
+    if (hasPhoneActive) {
       P.camRoll = phoneCamRoll;
       P.camPitch = phoneCamPitch;
-    } else if (isMouseActive) {
+    } else if ($('#mouseDev').checked && isMouseActive) {
       P.camRoll = mouseCamRoll;
       P.camPitch = mouseCamPitch;
-    } else if (hasPhoneActive) {
-      P.camRoll = phoneCamRoll;
-      P.camPitch = phoneCamPitch;
     } else {
       P.camRoll = 0;
       P.camPitch = 0;
@@ -480,20 +469,20 @@ function update3DWorld(now) {
   // Renderizar Partículas del Enjambre
   pgx.clearRect(0, 0, partCv.width, partCv.height);
   const pollinators = getActivePollinators();
-  const onlineCount = Object.keys(tacto.devices).filter(k => tacto.devices[k].online).length;
-  $('#statPeers').textContent = String(Math.max(1, onlineCount + ($('#mouseDev').checked ? 1 : 0)));
+  const onlinePhones = Object.values(tacto.devices).filter(k => k.online && k.id !== 'raton');
+  $('#statPeers').textContent = String(onlinePhones.length > 0 ? onlinePhones.length : ($('#mouseDev').checked ? 1 : 0));
 
   const isSwarming = pollinators.length > 0 || isClimax;
 
   // Fecundación continua directa por teléfonos móviles tocando la pantalla
   if (!isClimax) {
     for (const pol of pollinators) {
-      if (pol.isDown && pol.id !== 'raton' && Math.random() > 0.4) {
+      if (pol.isDown && pol.id !== 'raton') {
         const sx = pol.tx * partCv.width;
         const sy = pol.ty * partCv.height;
         const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
         const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
-        swarmDepositPollen(wx, wy, pol.td > 78, 1.25);
+        swarmDepositPollen(wx, wy, pol.td > 78, 1.35);
       }
     }
   }
@@ -704,8 +693,8 @@ stage.addEventListener('wheel', e => {
 
 stage.addEventListener('pointerdown', e => {
   ensureAudio().catch(() => {});
-  $('#mouseDev').checked = true;
-  if (isClimax) return;
+  const hasRealPhone = Object.values(tacto.devices).some(d => d.online && d.id !== 'raton');
+  if (hasRealPhone || isClimax) return;
   mouseIsDown = true;
   isRightClick = e.button === 2 || e.shiftKey || e.altKey;
   stage.setPointerCapture(e.pointerId);
@@ -715,7 +704,7 @@ stage.addEventListener('pointerdown', e => {
   lastMoveTime = performance.now();
   lastMouseMoveTime = performance.now();
 
-  // Fecundación visual inmediata y viva en el punto de clic
+  // Fecundación visual inmediata y viva en el punto de clic (solo modo prueba laptop)
   const sx = mouseCoords.x * partCv.width;
   const sy = mouseCoords.y * partCv.height;
   const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
@@ -724,6 +713,11 @@ stage.addEventListener('pointerdown', e => {
 });
 
 stage.addEventListener('pointermove', e => {
+  const hasRealPhone = Object.values(tacto.devices).some(d => d.online && d.id !== 'raton');
+  if (hasRealPhone) {
+    mouseInside = false;
+    return;
+  }
   mouseInside = true;
   const r = stage.getBoundingClientRect();
   const nx = (e.clientX - r.left) / r.width - 0.5;
@@ -808,11 +802,6 @@ function processGestures() {
     for (const p of touchingPollinators) {
       sumFingers += p.tn;
       if (p.td > 78) anyNecrosis = true;
-      // Solo aplicar giroscopio si proviene de un teléfono MQTT real
-      if (p.id !== 'raton' && p.id !== 'raton_hover') {
-        if (p.gy != null) P.camRoll = clamp(p.gy * 0.7, -25, 25);
-        if (p.gx != null) P.camPitch = clamp((p.gx - 35) * 0.6, -20, 20);
-      }
     }
 
     const isStress = anyNecrosis || sumFingers >= 4 || isRigid;
@@ -1060,7 +1049,7 @@ async function updateJoin() {
     const i = await (await fetch('info', { cache: 'no-store' })).json();
     if (i.baseUrl) { base = CFG.phoneUrl || i.baseUrl + '/'; local = true; }
   } catch {}
-  if (!base) base = new URL('./', location.href).href;
+  if (!base) base = new URL('index.html', location.href).href;
   let u = base + (base.includes('?') ? '&' : '?') + 'sala=' + tacto.sala;
   if (!local || Q.get('broker')) u += '&broker=' + encodeURIComponent(tacto.broker || Tacto.PUBLIC_BROKER);
   $('#phoneUrl').textContent = u;
@@ -1095,8 +1084,9 @@ tacto.connect().then(() => {
 
 let frame = 0;
 (function mainLoop(now) {
-  // Registrar ratón en tacto.devices para sincronizar medidores y matrices
-  if ($('#mouseDev').checked) {
+  // Registrar ratón en tacto.devices SOLO si no hay teléfono conectado
+  const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
+  if ($('#mouseDev').checked && realPhones.length === 0) {
     tacto.devices['raton'] = {
       id: 'raton',
       name: 'laptop',
@@ -1123,9 +1113,20 @@ let frame = 0;
 
   if (++frame % 4 === 0) {
     updateMeters();
-    const onlineDevs = Object.keys(tacto.devices).filter(k => tacto.devices[k].online && k !== 'raton').length;
-    const isMouseReady = $('#mouseDev').checked;
-    $('#waiting').hidden = isMouseReady || onlineDevs > 0;
+    const activePhones = Object.values(tacto.devices).filter(k => k.online && k.id !== 'raton');
+    if (activePhones.length > 0) {
+      $('#waiting').innerHTML = `<b>📱 PRÓTESIS CONECTADA (${activePhones[0].name || 'Teléfono'})</b><span>Giroscopio y tacto activos · Inclina para volar y toca la pantalla para fecundar.</span>`;
+      $('#waiting').style.borderColor = 'rgba(74, 222, 128, 0.6)';
+      if (!window.__phoneToastDismissed) {
+        window.__phoneToastDismissed = true;
+        setTimeout(() => { if (activePhones.length > 0) $('#waiting').hidden = true; }, 4500);
+      }
+    } else {
+      window.__phoneToastDismissed = false;
+      $('#waiting').innerHTML = `<b>Esperando conexión con teléfonos polinizadores...</b><span>Escanea el QR en el panel inferior con tu teléfono para activar el giroscopio y tacto.</span>`;
+      $('#waiting').style.borderColor = 'var(--line-2)';
+      $('#waiting').hidden = $('#mouseDev').checked;
+    }
   }
   requestAnimationFrame(mainLoop);
 })(performance.now());

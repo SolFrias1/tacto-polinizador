@@ -43,19 +43,28 @@
 </head>
 <body>
   <div id="join" class="card">
-    <h1>TACTO <span>· control remoto</span></h1>
-    <div class="field"><label for="name">Tu nombre</label>
-    <input id="name" autocomplete="off" autocapitalize="off" maxlength="24" placeholder="ej: ana"></div>
-    <div class="field"><label for="sala">Sala (la muestra la experiencia en el computador)</label>
+    <div style="text-align: center; margin-bottom: 6px;">
+      <span style="font-size: 36px;">🐝</span>
+      <h1 style="margin: 6px 0 2px 0;">UMWELT <span>· Prótesis Insectil</span></h1>
+      <p style="color: var(--mut); font-size: 13px; margin: 0;">Control de vuelo (giroscopio) y fecundación (tacto)</p>
+    </div>
+    <div class="field"><label for="name">Tu nombre o rol de polinizador</label>
+    <input id="name" autocomplete="off" autocapitalize="off" maxlength="24" placeholder="ej: Abeja"></div>
+    <div class="field"><label for="sala">Código de sala sincronizada</label>
     <input id="sala" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="24" placeholder="ej: k7m2xq"></div>
-    <button id="go" class="primary">Conectar</button>
+    <button id="go" class="primary" style="background: linear-gradient(135deg, #a3e635, #65a30d); color: #051004; font-size: 17px; font-weight: 700; padding: 15px; border: none; box-shadow: 0 6px 20px rgba(163,230,53,0.35); cursor: pointer; margin-top: 6px;">
+      🚀 ENTRAR AL VUELO
+    </button>
     <div class="msg" id="err" role="alert"></div>
-    <div class="note">Acepta el permiso de movimiento y deja la pantalla encendida. En iPhone, "Añadir a pantalla de inicio" evita los gestos del borde.</div>
+    <div class="note">Al pulsar el botón verde, <b>acepta el permiso de movimiento / orientación</b> para pilotar inclinando el teléfono.</div>
   </div>
 
   <div id="run">
     <div id="bar"><span id="st" role="status" aria-live="polite">Conectando…</span><span id="info"></span></div>
-    <div id="surface"><canvas id="cv" aria-hidden="true"></canvas><div id="hud" aria-hidden="true"></div><div id="hint">Toca y arrastra con uno o varios dedos</div></div>
+    <div style="background: rgba(163,230,53,0.12); border: 1px solid rgba(163,230,53,0.3); border-radius: var(--r-s); padding: 8px 12px; font-size: 12px; color: #d9f99d; text-align: center;">
+      📱 <b>Inclina</b> el teléfono en el aire para volar · <b>Toca</b> la pantalla para fecundar flores
+    </div>
+    <div id="surface"><canvas id="cv" aria-hidden="true"></canvas><div id="hud" aria-hidden="true"></div><div id="hint">🌿 Mueve el teléfono en el aire para dirigir el vuelo 3D<br><br>✨ Toca y arrastra aquí para fecundar el prado</div></div>
     <div id="mods">
       <button class="mod" id="m-motion" aria-pressed="false">Giro<small id="v-motion">–</small></button>
       <button class="mod" id="m-mic" aria-pressed="false">Micrófono<small id="v-mic">–</small></button>
@@ -74,7 +83,7 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, r3 = v => Math.round(v * 1000) / 1000;
 
 const Q = new URLSearchParams(location.search);
-$('#name').value = ls('tacto.name') || '';
+$('#name').value = ls('tacto.name') || 'Abeja';
 $('#sala').value = Tacto.clean(Q.get('sala')) || Tacto.clean(ls('tacto.sala')) || '';
 
 let client = null, base = '', name = '', sala = '';
