@@ -4,9 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UMWELT · El Jardín de Frankenstein</title>
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="ui.css?v=20261112_1150">
 </head>
 <body>
+
+<!-- LOBBY OBLIGATORIO: SALA DE ESPERA Y CONEXIÓN QR (BLOQUEA LA PANTALLA HASTA CONECTAR) -->
+<div id="lobbyModal" class="lobby-modal" style="position:fixed; inset:0; z-index:999999; display:flex; align-items:center; justify-content:center; background:rgba(3,8,5,0.95); backdrop-filter:blur(25px); padding:24px;">
+  <div class="lobby-card">
+    <div class="lobby-tag">UMWELT · SALA DE CONEXIÓN OBLIGATORIA</div>
+    <h2>🐝 Conecta tu Teléfono para Comenzar</h2>
+    <p class="lobby-desc">
+      Escanea el código QR con tu teléfono móvil para convertirlo en la prótesis de vuelo y fecundación táctil.
+    </p>
+
+    <div class="lobby-qr-box">
+      <img id="lobbyQr" alt="Código QR para conectar teléfonos" width="180" height="180">
+      <div class="lobby-url-pill" id="lobbyUrl">Cargando enlace…</div>
+      <div style="font-size:11px; color:#4a6850;">Sala sincronizada: <b id="lobbySala" style="color:#15803d">…</b></div>
+    </div>
+
+    <div class="lobby-players">
+      <div class="lobby-players-title">📱 Teléfonos conectados (<span id="playerCount">0</span>):</div>
+      <div id="playerList" class="player-list">
+        <span class="no-players">Esperando que al menos un teléfono escanee el QR y entre…</span>
+      </div>
+    </div>
+
+    <div class="lobby-actions">
+      <button id="startGameBtn" class="primary" disabled style="opacity: 0.5; cursor: not-allowed; background:linear-gradient(135deg, #a3e635, #65a30d); color:#051004; border:none; padding:15px; font-weight:700;">
+        ⏳ Esperando al menos 1 teléfono…
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- NAVEGACIÓN SUPERIOR FLOTANTE -->
 <nav class="top-bar">
@@ -70,36 +100,6 @@
 <section class="interactive-arena" id="arena">
   
   <div id="stageWrap">
-    <!-- LOBBY OBLIGATORIO: SALA DE ESPERA Y CONEXIÓN QR -->
-    <div id="lobbyModal" class="lobby-modal">
-      <div class="lobby-card">
-        <div class="lobby-tag">UMWELT · SALA DE CONEXIÓN OBLIGATORIA</div>
-        <h2>🐝 Conecta tu Teléfono para Comenzar</h2>
-        <p class="lobby-desc">
-          Escanea el código QR con tu teléfono móvil para convertirlo en la prótesis de vuelo y fecundación táctil.
-        </p>
-
-        <div class="lobby-qr-box">
-          <img id="lobbyQr" alt="Código QR para conectar teléfonos" width="180" height="180">
-          <div class="lobby-url-pill" id="lobbyUrl">Cargando enlace…</div>
-          <div style="font-size:11px; color:#4a6850;">Sala sincronizada: <b id="lobbySala" style="color:#15803d">…</b></div>
-        </div>
-
-        <div class="lobby-players">
-          <div class="lobby-players-title">📱 Teléfonos conectados (<span id="playerCount">0</span>):</div>
-          <div id="playerList" class="player-list">
-            <span class="no-players">Esperando que al menos un teléfono escanee el QR y entre…</span>
-          </div>
-        </div>
-
-        <div class="lobby-actions">
-          <button id="startGameBtn" class="primary" disabled style="opacity: 0.5; cursor: not-allowed; background:linear-gradient(135deg, #a3e635, #65a30d); color:#051004; border:none; padding:15px; font-weight:700;">
-            ⏳ Esperando al menos 1 teléfono…
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- POPUP FLOTANTE: CLÍMAX IRREVERSIBLE (No tapa el prado, permite ver la metamorfosis de colores) -->
     <div id="climaxModal">
       <div class="climax-banner">
@@ -224,8 +224,8 @@
   UMWELT · El Jardín de Frankenstein — Taller de Diseño y Programación de Proyectos Interactivos (PPI)
 </footer>
 
-<script src="config.js"></script>
-<script src="tacto.js"></script>
-<script src="exp.js"></script>
+<script src="config.js?v=20261112_1150"></script>
+<script src="tacto.js?v=20261112_1150"></script>
+<script src="exp.js?v=20261112_1150"></script>
 </body>
 </html>

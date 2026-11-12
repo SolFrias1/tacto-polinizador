@@ -299,16 +299,29 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
     lgx.arc(targetWorldX, targetWorldY, rad * 1.3, 0, Math.PI * 2);
     lgx.fill();
   } else {
-    // Flor fotográfica viva: textura pura y natural de flori.png sin distorsión cromática
+    // 1. Halo de polen bioluminiscente en el punto de contacto
+    lgx.globalCompositeOperation = 'lighter';
+    const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.35);
+    halo.addColorStop(0, 'rgba(230, 255, 61, 0.65)');
+    halo.addColorStop(0.5, 'rgba(74, 222, 128, 0.3)');
+    halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    lgx.fillStyle = halo;
+    lgx.beginPath();
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.35, 0, Math.PI * 2);
+    lgx.fill();
+
+    // 2. Flor fotográfica viva: toma cuadrantes de flori.png para que brote una flor hermosa y nítida
     lgx.globalCompositeOperation = 'source-over';
-    lgx.globalAlpha = 0.88;
+    lgx.globalAlpha = 0.95;
     lgx.beginPath();
     lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
     lgx.clip();
     
-    const pat = lgx.createPattern(floriImg, 'repeat');
-    lgx.fillStyle = pat;
-    lgx.fillRect(targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
+    const sliceIndex = Math.floor(Math.random() * 4);
+    const sw = (floriImg.width || 2048) / 4;
+    const sh = floriImg.height || 768;
+    const sx = sliceIndex * sw;
+    lgx.drawImage(floriImg, sx, 0, sw, sh, targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
 
     totalBlooms++;
   }
@@ -398,8 +411,8 @@ function update3DWorld(now) {
 
     // 1. Navegación táctil directa: deslizar el dedo en la pantalla del móvil actúa como timón de vuelo
     if (tx != null && ty != null && isDown) {
-      const touchRoll = (tx - 0.5) * 55;
-      const touchPitch = (ty - 0.5) * 45;
+      const touchRoll = (tx - 0.5) * 80;
+      const touchPitch = (ty - 0.5) * 60;
       targetRoll += touchRoll;
       targetPitch += touchPitch;
     }
@@ -411,8 +424,8 @@ function update3DWorld(now) {
       const gyroRoll = clamp(gy * 0.95, -45, 45);
       const gyroPitch = clamp((gx - 35) * 0.85, -35, 35);
       if (isDown) {
-        targetRoll += gyroRoll * 0.5;
-        targetPitch += gyroPitch * 0.5;
+        targetRoll += gyroRoll * 0.4;
+        targetPitch += gyroPitch * 0.4;
       } else {
         targetRoll += gyroRoll;
         targetPitch += gyroPitch;
@@ -460,10 +473,10 @@ function update3DWorld(now) {
   }
 
   // Perspectiva 3D con alabeo y cabeceo dinámico
-  const rotX = isSatellite ? 14 : 22 + curCamPitch * 0.35;
-  const rotZ = -curCamRoll * 0.35;
-  const transX = -curCamRoll * 3.8;
-  const transY = -curCamPitch * 2.4;
+  const rotX = isSatellite ? 14 : 22 + curCamPitch * 0.45;
+  const rotZ = -curCamRoll * 0.45;
+  const transX = -curCamRoll * 5.2;
+  const transY = -curCamPitch * 3.5;
   const scale = P.zoom;
 
   groundPlane.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${transX}px, ${transY}px, 0) scale(${scale})`;
@@ -623,6 +636,33 @@ function update3DWorld(now) {
     hgx.fillStyle = '#e6ff3d';
     hgx.fillText(`${pol.name}: +${Math.round(disp.distance)}px`, targetScreenX + 12, targetScreenY + 4);
     $('#statDrift').textContent = `+${Math.round(disp.distance)} px`;
+  }
+
+  // Retícula visible en pantalla para cada teléfono conectado (indica exactamente dónde toca el usuario)
+  for (const pol of pollinators) {
+    if (pol.id === 'raton' || pol.id === 'raton_hover') continue;
+    const directX = pol.tx * hudCv.width;
+    const directY = pol.ty * hudCv.height;
+
+    hgx.save();
+    hgx.beginPath();
+    hgx.arc(directX, directY, pol.isDown ? 24 : 12, 0, Math.PI * 2);
+    hgx.fillStyle = pol.isDown ? 'rgba(74, 222, 128, 0.35)' : 'rgba(230, 255, 61, 0.15)';
+    hgx.fill();
+
+    hgx.beginPath();
+    hgx.arc(directX, directY, pol.isDown ? 12 : 6, 0, Math.PI * 2);
+    hgx.fillStyle = pol.isDown ? '#4ade80' : '#e6ff3d';
+    hgx.shadowBlur = pol.isDown ? 14 : 6;
+    hgx.shadowColor = pol.isDown ? '#4ade80' : '#e6ff3d';
+    hgx.fill();
+
+    hgx.font = 'bold 12px system-ui, sans-serif';
+    hgx.fillStyle = '#ffffff';
+    hgx.shadowBlur = 4;
+    hgx.shadowColor = '#000000';
+    hgx.fillText(`🐝 ${pol.name}${pol.isDown ? ' (fecundando)' : ''}`, directX + 16, directY + 4);
+    hgx.restore();
   }
 
   // Osciloscopio acústico
@@ -1107,6 +1147,8 @@ if (startGameBtn) {
     if (startGameBtn.disabled) return;
     if (lobbyModal) lobbyModal.classList.add('hidden');
     await ensureAudio();
+    const arena = $('#arena');
+    if (arena) arena.scrollIntoView({ behavior: 'smooth' });
   };
 }
 
