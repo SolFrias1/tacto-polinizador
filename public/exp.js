@@ -35,10 +35,10 @@ tgt('audio.filtro', 'Audio', 'filtro ambiental del ecosistema (Hz)', 200, 12000,
 
 // ============================ ECOSISTEMA SONORO ======================
 const AUDIO_DEFS = {
-  bosque: { url: 'audio_bee/bosque.m4a', fallback: 'audio_bee/bosque.flac', loop: true, baseVol: 0.45 },
-  palpito: { url: 'audio_bee/palpito.m4a', fallback: 'audio_bee/palpito.wav', loop: true, baseVol: 0.9 },
-  abeja: { url: 'audio_bee/abeja.m4a', fallback: 'audio_bee/abeja.wav', loop: true, baseVol: 0.85 },
-  mala_abeja: { url: 'audio_bee/mala_abeja.mp3', loop: true, baseVol: 0.85 },
+  bosque: { url: 'audio_bee/bosque.m4a', fallback: 'audio_bee/bosque.flac', loop: true, baseVol: 0.42 },
+  palpito: { url: 'audio_bee/palpito.m4a', fallback: 'audio_bee/palpito.wav', loop: true, baseVol: 0.85 },
+  abeja: { url: 'audio_bee/abeja.m4a', fallback: 'audio_bee/abeja.wav', loop: true, baseVol: 1.0 },
+  mala_abeja: { url: 'audio_bee/mala_abeja.mp3', loop: true, baseVol: 0.88 },
   maquina: { url: 'audio_bee/maquina.mp3', loop: true, baseVol: 0.8 },
   alarma: { url: 'audio_bee/alarma.wav', loop: false, baseVol: 0.95 },
   robot: { url: 'audio_bee/robot.mp3', loop: false, baseVol: 0.9 },
@@ -127,17 +127,24 @@ async function initSoundscape() {
 
 $('#audioBtn').onclick = initSoundscape;
 
-// Audición interactiva de sonidos desde el Cajón 2
+// Audición interactiva de sonidos desde el Cajón 2 (prueba aislada)
 document.querySelectorAll('#soundBadges .sound-badge').forEach(badge => {
   badge.onclick = async () => {
     if (!A.ctx) await initSoundscape();
     const snd = badge.dataset.snd;
     if (!snd) return;
     if (AUDIO_DEFS[snd]?.loop) {
-      setGain(snd, 1.0, 0.05);
+      // Apagar temporalmente otros bucles para escuchar claramente la capa seleccionada
+      for (const [k, def] of Object.entries(AUDIO_DEFS)) {
+        if (def.loop && k !== snd) setGain(k, 0, 0.04);
+      }
+      setGain(snd, 1.0, 0.04);
       setTimeout(() => {
-        if (!mouseIsDown) setGain(snd, snd === 'bosque' ? AUDIO_DEFS.bosque.baseVol : 0, 0.5);
-      }, 2600);
+        if (!mouseIsDown) {
+          setGain(snd, snd === 'bosque' ? AUDIO_DEFS.bosque.baseVol : 0, 0.4);
+          setGain('bosque', AUDIO_DEFS.bosque.baseVol, 0.4);
+        }
+      }, 3000);
     } else {
       playTrigger(snd);
     }
@@ -296,7 +303,7 @@ function triggerClimax() {
   setTimeout(() => playTrigger('robot'), 800);
   setGain('palpito', 0.85);
   setGain('maquina', 0.85);
-  setGain('abeja', 0.9);
+  setGain('abeja', 0.95);
 }
 
 // Polinizadores activos
@@ -590,6 +597,7 @@ stage.addEventListener('pointerdown', e => {
   const r = stage.getBoundingClientRect();
   mouseCoords.x = clamp((e.clientX - r.left) / r.width);
   mouseCoords.y = clamp((e.clientY - r.top) / r.height);
+  lastMoveTime = performance.now();
 });
 
 stage.addEventListener('pointermove', e => {
@@ -601,7 +609,6 @@ stage.addEventListener('pointermove', e => {
   mouseCoords.x = clamp((e.clientX - r.left) / r.width);
   mouseCoords.y = clamp((e.clientY - r.top) / r.height);
   
-  // Rotación suave sin giros descontrolados
   if (!isClimax) {
     P.camRoll = nx * 14;
     P.camPitch = ny * 10;
@@ -637,16 +644,18 @@ window.addEventListener('keydown', e => {
 // ============================ LÓGICA COLECTIVA DE GESTOS ==============
 let lastTouchCount = 0, alarmFired = false;
 let touchPrevX = 0.5, touchPrevY = 0.5, touchSpeed = 0;
-let touchDownTime = 0;
+let touchDownTime = 0, lastMoveTime = 0;
 
 function processGestures() {
   const pollinators = getActivePollinators();
   const touchingPollinators = pollinators.filter(p => p.isDown);
   const activeCount = touchingPollinators.length;
+  const now = performance.now();
 
   if (activeCount > 0 && !isClimax) {
     if (lastTouchCount === 0) {
-      touchDownTime = performance.now();
+      touchDownTime = now;
+      lastMoveTime = now;
       alarmFired = false;
       if (A.ctx) setGain('palpito', 1.0, 0.04);
     }
@@ -654,11 +663,18 @@ function processGestures() {
     let sumFingers = 0;
     let anyNecrosis = false;
 
-    // Calcular velocidad para detectar rigidez vs soltura
+    // Calcular velocidad para detectar desplazamiento fluido vs rigidez en un punto
     const p1 = touchingPollinators[0];
     const dPos = Math.hypot(p1.tx - touchPrevX, p1.ty - touchPrevY);
     touchSpeed = touchSpeed * 0.75 + (dPos / (1 / 60)) * 0.25;
     touchPrevX = p1.tx; touchPrevY = p1.ty;
+
+    if (dPos > 0.003) {
+      lastMoveTime = now;
+    }
+
+    const timeStill = (now - lastMoveTime) / 1000;
+    const isRigid = timeStill > 0.9; // Más de 0.9 segundos presionando quieto en el mismo punto
 
     for (const p of touchingPollinators) {
       sumFingers += p.tn;
@@ -670,21 +686,41 @@ function processGestures() {
       }
     }
 
-    // Audio adaptativo:
-    // Movimiento rápido/suave = abeja armónica
-    // Movimiento lento/rígido/estático = mala abeja (irritada)
-    if (touchSpeed < 0.08) {
-      setGain('mala_abeja', 0.95, 0.08);
-      setGain('abeja', 0.05, 0.1);
-      $('#statTension').textContent = 'Abeja Irritada';
+    const isStress = anyNecrosis || sumFingers >= 4 || isRigid;
+
+    // AUDIO ADAPTATIVO:
+    // ESTADO 1: ARMÓNICO (Abeja normal zumbando nítida y presente)
+    // ESTADO 2: ESTRÉS (Mala abeja irritada y agresiva)
+    if (isStress) {
+      setGain('mala_abeja', 0.95, 0.06);
+      setGain('abeja', 0.08, 0.08);
+
+      if (anyNecrosis) {
+        $('#statTension').textContent = 'SOBRECARGA (Necrosis)';
+        $('#statTension').style.color = 'var(--err)';
+      } else if (sumFingers >= 4) {
+        $('#statTension').textContent = 'HISTERIA COLECTIVA';
+        $('#statTension').style.color = 'var(--err)';
+      } else {
+        $('#statTension').textContent = 'Abeja Irritada (Rigidez)';
+        $('#statTension').style.color = 'var(--warn)';
+      }
     } else {
-      setGain('abeja', 0.9, 0.08);
-      setGain('mala_abeja', 0.0, 0.1);
-      $('#statTension').textContent = 'Armonía';
+      // Vuelo armónico fluido y continuo
+      setGain('abeja', 0.95, 0.06);
+      setGain('mala_abeja', 0.0, 0.08);
+      $('#statTension').textContent = 'Armonía (Vuelo Activo)';
+      $('#statTension').style.color = 'var(--ok)';
+
+      // Modulación orgánica del tono de vuelo de la abeja con la velocidad
+      if (A.nodes['abeja'] && A.nodes['abeja'].playbackRate) {
+        const rate = clamp(0.94 + dPos * 4.2, 0.90, 1.25);
+        A.nodes['abeja'].playbackRate.setTargetAtTime(rate, A.ctx.currentTime, 0.08);
+      }
     }
 
     // Si el contacto persiste más de 1.8 segundos, la colmena mecánica empieza a zumbar
-    const elapsed = (performance.now() - touchDownTime) / 1000;
+    const elapsed = (now - touchDownTime) / 1000;
     if (elapsed > 1.8) {
       const volMaq = Math.min(0.85, (elapsed - 1.8) * 0.35);
       setGain('maquina', volMaq, 0.1);
@@ -692,28 +728,23 @@ function processGestures() {
       setGain('maquina', 0, 0.1);
     }
 
-    if (sumFingers >= 4) {
-      setGain('mala_abeja', 1.0, 0.08);
-      $('#statTension').textContent = 'HISTERIA COLECTIVA';
-    }
-
     if (anyNecrosis && !alarmFired) {
       playTrigger('alarma');
       alarmFired = true;
-      $('#statTension').textContent = 'SOBRECARGA';
     }
 
     if (sumFingers >= 3 && lastTouchCount < 3) playTrigger('robot');
   }
 
-  // Al soltar todos los contactos
+  // Al soltar todos los contactos: apagar abejas suavemente y sonar pago
   if (activeCount === 0 && lastTouchCount > 0 && !isClimax) {
     playTrigger('pago');
-    setGain('palpito', 0, 0.2);
-    setGain('abeja', 0, 0.2);
-    setGain('mala_abeja', 0, 0.2);
-    setGain('maquina', 0, 0.3);
-    $('#statTension').textContent = 'Armonía';
+    setGain('palpito', 0, 0.15);
+    setGain('abeja', 0, 0.15);
+    setGain('mala_abeja', 0, 0.15);
+    setGain('maquina', 0, 0.25);
+    $('#statTension').textContent = 'Armonía (En Espera)';
+    $('#statTension').style.color = 'var(--ok)';
   }
 
   lastTouchCount = activeCount;
@@ -743,7 +774,7 @@ const OPT_OUT = (() => {
   return h + '</optgroup>';
 })();
 
-function newMap(inn = 'touch.down', out = 'audio.palpito', o = {}) {
+function newMap(inn = 'touch.down', out = 'audio.abeja', o = {}) {
   const c = CHN[inn] || Tacto.CHANNELS[0];
   const t = T[out] || Object.values(T)[0];
   return { id: nextId++, on: true, in: c.name, inMin: c.min, inMax: c.max, out: t.id, outMin: t.min, outMax: t.max, curve: 'lineal', invert: false, smooth: 0.3, ...o };
@@ -753,24 +784,24 @@ function starter() {
   nextId = 1;
   maps = [
     newMap('touch.down', 'audio.palpito', { outMin: 0, outMax: 1, smooth: 0.1 }),
+    newMap('touch.down', 'audio.abeja', { outMin: 0, outMax: 1, smooth: 0.1 }),
     newMap('ang.g', 'vuelo.inclinacion.x', { inMin: -45, inMax: 45, outMin: -40, outMax: 40, smooth: 0.3 }),
     newMap('ang.b', 'vuelo.inclinacion.y', { inMin: -25, inMax: 65, outMin: -25, outMax: 25, smooth: 0.3 }),
     newMap('touch.dist', 'vuelo.zoom', { inMin: 0.1, inMax: 1.2, outMin: 0.7, outMax: 2.6, smooth: 0.2 }),
     newMap('touch.dist', 'flor.color_exotico', { inMin: 0.1, inMax: 1.0, outMin: 0, outMax: 260, smooth: 0.15 }),
     newMap('touch.d', 'flor.necrosis', { inMin: 30, inMax: 90, outMin: 0, outMax: 1, smooth: 0.2 }),
-    newMap('touch.f', 'audio.mala_abeja', { inMin: 0.1, inMax: 0.9, outMin: 0, outMax: 1, smooth: 0.3 }),
     newMap('touch.x', 'polen.desfase', { inMin: 0, inMax: 1, outMin: 1, outMax: 4, smooth: 0.2 })
   ];
 }
 
 try {
-  maps = JSON.parse(ls('umwelt.exp.maps') || 'null') || [];
+  maps = JSON.parse(ls('umwelt.exp.maps.v3') || 'null') || [];
   maps = maps.filter(m => CHN[m.in] && T[m.out]);
   nextId = Math.max(0, ...maps.map(m => m.id)) + 1;
 } catch { maps = []; }
 if (!maps.length) starter();
 
-const save = () => ls('umwelt.exp.maps', JSON.stringify(maps));
+const save = () => ls('umwelt.exp.maps.v3', JSON.stringify(maps));
 
 function rowEl(m) {
   const d = document.createElement('div');
