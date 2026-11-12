@@ -69,8 +69,10 @@
 <section class="interactive-arena" id="arena">
   
   <div id="stageWrap">
-    <!-- Superposición Street View (Pétalos macro gigantes en esquinas) -->
-    <div class="macro-petals" id="macroPetals"></div>
+    <!-- Superposición Inmersiva Umwelt (Bokeh de pétalos gigantes y refracción floral) -->
+    <div class="macro-petals" id="macroPetals">
+      <div class="macro-vignette"></div>
+    </div>
 
     <!-- POPUP FLOTANTE: CLÍMAX IRREVERSIBLE (No tapa el prado, permite ver la metamorfosis de colores) -->
     <div id="climaxModal">
@@ -99,11 +101,11 @@
     <canvas id="particlesCanvas"></canvas>
     <canvas id="hudCanvas"></canvas>
 
-    <!-- SELECTOR DE PERSPECTIVA RÁPIDA (STREET VIEW / FPV / SATÉLITE) -->
+    <!-- SELECTOR DE PERSPECTIVA CONCEPTUAL UMWELT -->
     <div class="view-switcher" id="viewSwitcher">
-      <button class="view-btn" data-view="satellite" title="Vista Satelital Panorámica">🔭 Satélite</button>
-      <button class="view-btn active" data-view="fpv" title="Vuelo FPV de Abeja">🐝 Vista Abeja</button>
-      <button class="view-btn" data-view="macro" title="Macro Inmersión Street View (Entre las Flores)">🔍 Macro Street View</button>
+      <button class="view-btn" data-view="satellite" title="Visión Aérea Panorámica">🔭 Ojo Panorámico</button>
+      <button class="view-btn active" data-view="fpv" title="Vuelo FPV de Enjambre">🐝 Vuelo FPV</button>
+      <button class="view-btn" data-view="macro" title="Inmersión en el Cáliz Floral (Micro-Umwelt)">🌸 Inmersión Umwelt</button>
     </div>
 
     <button id="fsBtn" type="button" aria-label="Pantalla completa" title="Pantalla completa (F)">

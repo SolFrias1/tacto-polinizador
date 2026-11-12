@@ -56,7 +56,7 @@ Al igual que en la advertencia de **Mary Shelley en *Frankenstein o el moderno P
   │  - Mosaico botánico 2048px   - Cadena de 8 nodos       │
   │  - Máscara orgánica radial   - BiquadFilter (Lowpass)  │
   │  - Enjambre 140 partículas   - StereoPanner + Dynamics │
-  │  - Macro Street View (Zoom)  - Analyser (Osciloscopio) │
+  │  - Inmersión Umwelt (Macro)  - Analyser (Osciloscopio) │
   │                                                        │
   │  [Matriz de Traducción Interactiva (Gesto -> Salida)]  │
   └────────────────────────────────────────────────────────┘
@@ -68,7 +68,7 @@ Al igual que en la advertencia de **Mary Shelley en *Frankenstein o el moderno P
 |---|---|---|---|---|
 | **Inclinación del teléfono** (Alabeo / Roll) | `ang.g` (Giroscopio Y) | `vuelo.inclinacion.x` | Lineal (-40° a +40°) | Inclinación de la perspectiva aérea 3D. El participante "vuela" sintiendo la desorientación del insecto. |
 | **Inclinación del teléfono** (Cabeceo / Pitch) | `ang.b` (Giroscopio X) | `vuelo.inclinacion.y` | Suave (-25° a +25°) | Picada o elevación hacia el horizonte vegetal. |
-| **Gesto de Pinza / 2 Dedos** (Pinch zoom) | `touch.dist` (Distancia entre dedos) | `vuelo.zoom` | Suave (0.7x a 2.6x) | **Macro Street View:** Desciende la cámara al nivel del suelo entre los tallos, desenfocando los pétalos en primer plano. |
+| **Gesto de Pinza / 2 Dedos** (Pinch zoom) | `touch.dist` (Distancia entre dedos) | `vuelo.zoom` | Suave (0.7x a 2.6x) | **Inmersión Umwelt:** Desciende la cámara al nivel del suelo dentro del cáliz floral, desenfocando los pétalos en primer plano e intensificando el espectro ultravioleta. |
 | **Amplitud táctil** | `touch.dist` | `flor.color_exotico` | Acelerada (0° a 260°) | Desplaza el espectro lumínico hacia la longitud de onda ultravioleta que percibe la abeja. |
 | **Desplazamiento fluido** del dedo | Velocidad vectorial (`dPos/dt`) | `audio.abeja` | Proporcional (0 a 1) | Vuelo armónico y zumbido suave en resonancia mientras la caricia es continua y delicada. |
 | **Rigidez / Fricción lenta** en un punto | Velocidad baja (`< 0.08`) | `audio.mala_abeja` | Rápida (0 a 1) | Estrés biológico: el insecto se siente atrapado o irritado por la torpeza del dedo humano. |

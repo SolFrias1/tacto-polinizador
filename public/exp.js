@@ -361,26 +361,32 @@ function update3DWorld(now) {
   curCamRoll += (P.camRoll - curCamRoll) * 0.05;
   curCamPitch += (P.camPitch - curCamPitch) * 0.05;
 
-  const isMacro = P.zoom > 1.4;
+  const isMacro = P.zoom > 1.35;
   const isSatellite = P.zoom < 0.9;
   $('#stageWrap').classList.toggle('macro-active', isMacro);
 
   if (isMacro) {
-    $('#statChroma').textContent = `Macro Street View (UV ${Math.round(P.colorExotico)}°)`;
+    $('#statChroma').textContent = `Inmersión Umwelt (Dentro del Cáliz · UV ${Math.round(P.colorExotico)}°)`;
   } else if (isSatellite) {
-    $('#statChroma').textContent = 'Perspectiva Satelital';
+    $('#statChroma').textContent = 'Ojo Panorámico';
   } else {
-    $('#statChroma').textContent = 'Vuelo FPV Natural';
+    $('#statChroma').textContent = 'Vuelo FPV de Enjambre';
   }
 
-  // Perspectiva 3D con descenso natural
-  const rotX = isSatellite ? 12 : (isMacro ? 16 + curCamPitch * 0.15 : 20 + curCamPitch * 0.2);
+  // Perspectiva 3D con descenso natural a ras del suelo
+  const rotX = isSatellite ? 12 : (isMacro ? 11 + curCamPitch * 0.1 : 20 + curCamPitch * 0.2);
   const rotZ = -curCamRoll * 0.2;
   const transX = -curCamRoll * 2.5;
-  const transY = -curCamPitch * 1.5 + (isMacro ? (P.zoom - 1.4) * 90 : 0);
+  const transY = -curCamPitch * 1.5 + (isMacro ? (P.zoom - 1.35) * 145 : 0);
   const scale = P.zoom;
 
   groundPlane.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${transX}px, ${transY}px, 0) scale(${scale})`;
+
+  // Acústica íntima según perspectiva
+  if (A.filt && A.ctx) {
+    const targetHz = isMacro ? 11800 : (isSatellite ? 4600 : P.filtroHz);
+    A.filt.frequency.setTargetAtTime(targetHz, A.ctx.currentTime, 0.1);
+  }
 
   // Ciclo cromático autónomo en fase de clímax irreversible
   if (isClimax) autonomousHue = (autonomousHue + 0.6) % 360;
@@ -455,14 +461,21 @@ function update3DWorld(now) {
     if (b.y < -30) b.y += partCv.height + 60;
     if (b.y > partCv.height + 30) b.y -= partCv.height + 60;
 
-    const rad = b.size * (0.8 + 0.4 / b.z) * (isMacro ? 1.5 : 1);
+    const rad = b.size * (0.8 + 0.4 / b.z) * (isMacro ? 2.2 : 1);
     const alpha = clamp(0.25 + (1 / b.z) * 0.45, 0.15, 0.9);
 
     pgx.beginPath();
     pgx.arc(b.x, b.y, rad, 0, Math.PI * 2);
     const hue = b.charge > 0 ? (uvHue + 55) % 360 : (b.z > 1.5 ? 55 : 45);
     pgx.fillStyle = `hsla(${hue}, 95%, ${b.charge > 0 ? '75%' : '60%'}, ${alpha})`;
+    if (isMacro && b.z < 1.2) {
+      pgx.shadowBlur = 12;
+      pgx.shadowColor = `hsla(${hue}, 100%, 70%, 0.65)`;
+    } else {
+      pgx.shadowBlur = 0;
+    }
     pgx.fill();
+    pgx.shadowBlur = 0;
     b.charge *= 0.92;
   }
 
@@ -569,22 +582,22 @@ document.querySelectorAll('.view-btn').forEach(btn => {
       simulatedZoom = 1.05;
       P.zoom = 1.05;
     } else if (view === 'macro') {
-      simulatedZoom = 1.85;
-      P.zoom = 1.85;
+      simulatedZoom = 2.45;
+      P.zoom = 2.45;
     }
   };
 });
 
 stage.addEventListener('wheel', e => {
   e.preventDefault();
-  simulatedZoom = clamp(simulatedZoom - e.deltaY * 0.0018, 0.65, 2.6);
+  simulatedZoom = clamp(simulatedZoom - e.deltaY * 0.0018, 0.65, 2.9);
   P.zoom = simulatedZoom;
   document.querySelectorAll('.view-btn').forEach(b => {
     const v = b.dataset.view;
     b.classList.toggle('active', 
       (v === 'satellite' && P.zoom < 0.9) ||
-      (v === 'macro' && P.zoom > 1.4) ||
-      (v === 'fpv' && P.zoom >= 0.9 && P.zoom <= 1.4)
+      (v === 'macro' && P.zoom > 1.35) ||
+      (v === 'fpv' && P.zoom >= 0.9 && P.zoom <= 1.35)
     );
   });
 }, { passive: false });
