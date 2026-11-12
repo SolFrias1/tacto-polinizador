@@ -17,6 +17,7 @@
     <a href="#backstage">Matriz y QR</a>
     <span id="estado" class="dot" role="status">● sin conexión</span>
     <span id="rtt" style="color:var(--mut)"></span>
+    <button id="reopenLobbyBtn" style="background:transparent; border:1px solid var(--line-2); color:var(--neo); border-radius:999px; padding:4px 12px; font-size:12px; cursor:pointer;">📱 Código QR / Sala</button>
     <button id="audioBtn" class="primary">Activar Ecosistema Acústico</button>
   </div>
 </nav>
@@ -69,6 +70,36 @@
 <section class="interactive-arena" id="arena">
   
   <div id="stageWrap">
+    <!-- LOBBY OBLIGATORIO: SALA DE ESPERA Y CONEXIÓN QR -->
+    <div id="lobbyModal" class="lobby-modal">
+      <div class="lobby-card">
+        <div class="lobby-tag">UMWELT · SALA DE CONEXIÓN OBLIGATORIA</div>
+        <h2>🐝 Conecta tu Teléfono para Comenzar</h2>
+        <p class="lobby-desc">
+          Escanea el código QR con tu teléfono móvil para convertirlo en la prótesis de vuelo y fecundación táctil.
+        </p>
+
+        <div class="lobby-qr-box">
+          <img id="lobbyQr" alt="Código QR para conectar teléfonos" width="180" height="180">
+          <div class="lobby-url-pill" id="lobbyUrl">Cargando enlace…</div>
+          <div style="font-size:11px; color:#4a6850;">Sala sincronizada: <b id="lobbySala" style="color:#15803d">…</b></div>
+        </div>
+
+        <div class="lobby-players">
+          <div class="lobby-players-title">📱 Teléfonos conectados (<span id="playerCount">0</span>):</div>
+          <div id="playerList" class="player-list">
+            <span class="no-players">Esperando que al menos un teléfono escanee el QR y entre…</span>
+          </div>
+        </div>
+
+        <div class="lobby-actions">
+          <button id="startGameBtn" class="primary" disabled style="opacity: 0.5; cursor: not-allowed; background:linear-gradient(135deg, #a3e635, #65a30d); color:#051004; border:none; padding:15px; font-weight:700;">
+            ⏳ Esperando al menos 1 teléfono…
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- POPUP FLOTANTE: CLÍMAX IRREVERSIBLE (No tapa el prado, permite ver la metamorfosis de colores) -->
     <div id="climaxModal">
       <div class="climax-banner">
@@ -102,27 +133,17 @@
       <button class="view-btn active" data-view="fpv" title="Vuelo FPV de la Abeja">🐝 Vuelo FPV</button>
       <button class="view-btn" data-view="uv" title="Espectro Ultravioleta (Percepción de la Abeja)">👁️ Espectro UV</button>
     </div>
-
-    <button id="fsBtn" type="button" aria-label="Pantalla completa" title="Pantalla completa (F)">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
-      </svg>
-    </button>
     
-    <!-- AVISO DE CONEXIÓN (Se oculta automáticamente al mover ratón o conectar teléfono) -->
+    <!-- AVISO DE CONEXIÓN -->
     <div id="waiting" role="status" hidden>
       <b>Esperando conexión con teléfonos polinizadores…</b>
-      <span>Escanea el QR en el panel inferior con uno o varios teléfonos, o explora directamente con el ratón.</span>
-    </div>
-
-    <div id="desktopHelper">
-      <b>Controles laptop:</b> Mueve = Mirar · Arrastra = Fecundar · Rueda = Zoom Inmersivo · Clic Der = Necrosis (Alarma) · Tecla 3 = Robot
+      <span>Escanea el QR para volar con tu teléfono.</span>
     </div>
   </div>
 
   <!-- Barra de Descubrimiento Orgánico -->
   <div class="discovery-bar">
-    <div class="stat-pill">Polinizadores activos: <span id="statPeers" class="highlight">1</span></div>
+    <div class="stat-pill">Polinizadores activos: <span id="statPeers" class="highlight">0</span></div>
     <div class="stat-pill">Floración del campo: <span id="statCoverage" class="highlight">0%</span></div>
     <div class="stat-pill">Desfase de polen: <span id="statDrift" style="color:var(--warn)">+0 px</span></div>
     <div class="stat-pill">Perspectiva: <span id="statChroma">Vuelo FPV Natural</span></div>
@@ -130,7 +151,7 @@
     <div class="stat-pill">
       <button id="resetFieldBtn" style="font-size:11px; padding:3px 10px;">Marchitar prado</button>
       <label style="margin-left:8px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-        <input type="checkbox" id="mouseDev" checked> Ratón activo
+        <input type="checkbox" id="mouseDev"> Ratón de prueba
       </label>
     </div>
   </div>

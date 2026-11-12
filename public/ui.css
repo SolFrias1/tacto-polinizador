@@ -205,20 +205,7 @@ section.interactive-arena {
   100% { transform: rotate(-4.5deg) scale(1.09); }
 }
 
-#fsBtn { 
-  position: absolute; top: 14px; right: 14px; z-index: 5; 
-  width: 38px; height: 38px; min-height: 0; padding: 0; 
-  display: grid; place-items: center; background: rgba(8,16,11,.75); 
-  border-color: var(--line-2); backdrop-filter: blur(8px); border-radius: var(--r-s);
-}
 
-#desktopHelper {
-  position: absolute; left: 16px; bottom: 14px; z-index: 5;
-  background: rgba(4,8,5,0.85); border: 1px solid var(--line);
-  border-radius: 999px; padding: 6px 18px; font-size: 11px;
-  font-family: var(--mono); color: var(--mut); backdrop-filter: blur(8px);
-  pointer-events: none;
-}
 #desktopHelper b { color: var(--neo); font-weight: 600; }
 
 #waiting { 
@@ -276,6 +263,78 @@ section.interactive-arena {
 .stat-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mut); }
 .stat-pill span { color: var(--fg); font-weight: 600; font-family: var(--mono); }
 .stat-pill span.highlight { color: var(--neo); }
+
+/* LOBBY MODAL: SALA DE ESPERA OBLIGATORIA CON QR */
+.lobby-modal {
+  position: absolute; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3, 8, 5, 0.92); backdrop-filter: blur(20px);
+  padding: 24px; opacity: 1; transition: opacity 350ms ease, visibility 350ms;
+}
+.lobby-modal.hidden {
+  opacity: 0; pointer-events: none; visibility: hidden;
+}
+.lobby-card {
+  max-width: 580px; width: 100%; background: #0c1810;
+  border: 1px solid var(--line-2); border-radius: var(--r-l);
+  padding: 32px 36px; text-align: center;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.85), 0 0 40px rgba(74,222,128,0.15);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.lobby-tag {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+  color: var(--neo); text-transform: uppercase; font-weight: 700;
+}
+.lobby-card h2 {
+  font-family: var(--serif); font-size: 26px; color: #fff; margin: 0;
+  font-weight: 400; letter-spacing: 0.02em;
+}
+.lobby-desc {
+  color: #c4d7c8; font-size: 13px; margin: 0; line-height: 1.5; max-width: 440px;
+}
+.lobby-qr-box {
+  background: #ffffff; padding: 14px; border-radius: var(--r-m);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin: 6px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.lobby-qr-box img { display: block; border-radius: 4px; }
+.lobby-url-pill {
+  font-family: var(--mono); font-size: 11px; color: #3b503f;
+  background: #f0f7f2; padding: 4px 10px; border-radius: 999px;
+  word-break: break-all; max-width: 320px;
+}
+.lobby-players {
+  width: 100%; background: rgba(18, 34, 23, 0.6); border: 1px solid var(--line);
+  border-radius: var(--r-m); padding: 14px 18px; text-align: left;
+}
+.lobby-players-title {
+  font-size: 12px; font-weight: 600; color: var(--mut); margin-bottom: 8px;
+}
+.player-list {
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; align-items: center;
+}
+.no-players {
+  font-size: 12px; color: var(--mut); font-style: italic;
+}
+.player-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(74, 222, 128, 0.15); border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #dcfce7; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+}
+.player-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+.player-status {
+  font-size: 10px; color: #86efac; font-weight: 400; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.lobby-actions {
+  width: 100%; margin-top: 6px;
+}
+.lobby-actions button {
+  width: 100%; padding: 15px; font-size: 16px; font-weight: 700;
+  border-radius: var(--r-m); transition: all 250ms ease;
+}
 
 /* 5. SECCIÓN 4: LA TRASTIENDA MAQUÍNICA */
 section.backstage-section {

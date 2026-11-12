@@ -203,12 +203,12 @@ floriImg.onload = () => {
 };
 
 function renderInfiniteMeadowBase() {
-  // Mosaico botánico continuo y simétrico para eliminar cualquier borde
+  // Mosaico botánico continuo para una visualización natural
   const pat = bgx.createPattern(floriImg, 'repeat');
   bgx.fillStyle = pat;
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
-  // Capa sepia fría marchita en reposo
-  bgx.fillStyle = 'rgba(4, 10, 6, 0.48)';
+  // Velo suave de descanso botánico para que el prado sea visible sin ser negro
+  bgx.fillStyle = 'rgba(10, 18, 12, 0.32)';
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
 }
 
@@ -291,29 +291,17 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
   if (isNecrosis) {
     lgx.globalCompositeOperation = 'source-over';
     const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.3);
-    grad.addColorStop(0, 'rgba(18, 5, 3, 0.9)');
-    grad.addColorStop(0.6, 'rgba(45, 12, 6, 0.55)');
+    grad.addColorStop(0, 'rgba(18, 5, 3, 0.92)');
+    grad.addColorStop(0.6, 'rgba(45, 12, 6, 0.6)');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     lgx.fillStyle = grad;
     lgx.beginPath();
     lgx.arc(targetWorldX, targetWorldY, rad * 1.3, 0, Math.PI * 2);
     lgx.fill();
   } else {
-    // 1. Halo de bioluminiscencia viva en el espectro del polen
-    lgx.globalCompositeOperation = 'lighter';
-    lgx.globalAlpha = 0.55;
-    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.4);
-    const flowerHue = (P.colorExotico + Math.random() * 35) % 360;
-    grad.addColorStop(0, `hsla(${flowerHue}, 100%, 75%, 0.85)`);
-    grad.addColorStop(0.5, `hsla(${(flowerHue + 35) % 360}, 95%, 55%, 0.45)`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    lgx.fillStyle = grad;
-    lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad * 1.4, 0, Math.PI * 2);
-    lgx.fill();
-
-    // 2. Flor fotográfica nítida y colorida
-    lgx.globalAlpha = 0.78;
+    // Flor fotográfica viva: textura pura y natural de flori.png sin distorsión cromática
+    lgx.globalCompositeOperation = 'source-over';
+    lgx.globalAlpha = 0.88;
     lgx.beginPath();
     lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
     lgx.clip();
@@ -323,8 +311,6 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
     lgx.fillRect(targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
 
     totalBlooms++;
-    // Evolución cromática viva por cada fecundación
-    P.colorExotico = (P.colorExotico + 0.35) % 360;
   }
   lgx.restore();
 
@@ -399,18 +385,41 @@ let lastMouseMoveTime = 0, lastPhoneMoveTime = 0;
 function update3DWorld(now) {
   syncCanvasSizes();
 
-  // Control de vuelo continuo desde el giroscopio de cualquier teléfono móvil
+  // Control de vuelo continuo desde teléfonos móviles (Tacto + Giroscopio)
   let hasPhoneActive = false;
-  for (const dev of Object.values(tacto.devices)) {
-    if (!dev.online || dev.id === 'raton') continue;
+  let targetRoll = 0, targetPitch = 0;
+  const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
+
+  for (const dev of realPhones) {
+    hasPhoneActive = true;
+    const isDown = (dev.ch['touch.down'] || 0) >= 0.5;
+    const tx = dev.ch['touch.x'];
+    const ty = dev.ch['touch.y'];
+
+    // 1. Navegación táctil directa: deslizar el dedo en la pantalla del móvil actúa como timón de vuelo
+    if (tx != null && ty != null && isDown) {
+      const touchRoll = (tx - 0.5) * 55;
+      const touchPitch = (ty - 0.5) * 45;
+      targetRoll += touchRoll;
+      targetPitch += touchPitch;
+    }
+
+    // 2. Navegación por giroscopio (inclinación física en el aire)
     const gy = dev.ch['ang.g'];
     const gx = dev.ch['ang.b'];
     if (gy != null && gx != null) {
-      phoneCamRoll = clamp(gy * 0.95, -45, 45);
-      phoneCamPitch = clamp((gx - 35) * 0.85, -35, 35);
-      hasPhoneActive = true;
+      const gyroRoll = clamp(gy * 0.95, -45, 45);
+      const gyroPitch = clamp((gx - 35) * 0.85, -35, 35);
+      if (isDown) {
+        targetRoll += gyroRoll * 0.5;
+        targetPitch += gyroPitch * 0.5;
+      } else {
+        targetRoll += gyroRoll;
+        targetPitch += gyroPitch;
+      }
     }
-    // Zoom táctil desde el teléfono con 2 dedos
+
+    // Zoom táctil desde el teléfono con 2 dedos (pellizco)
     const td = dev.ch['touch.dist'];
     if (td != null && (dev.ch['touch.n'] || 0) >= 2) {
       P.zoom = clamp(0.7 + td * 1.6, 0.65, 3.2);
@@ -418,14 +427,14 @@ function update3DWorld(now) {
   }
 
   // Prioridad absoluta al teléfono como prótesis insectil:
-  // 1. Si hay un teléfono conectado, gobierna la inclinación en todo momento.
-  // 2. El ratón de laptop es solo un fallback de prueba si no hay teléfono.
+  // Si hay un teléfono conectado, gobierna la orientación de vuelo.
+  // El ratón de laptop solo interviene si se marca explícitamente la casilla de prueba.
   const isMouseActive = mouseInside || mouseIsDown || (now - lastMouseMoveTime < 2200);
 
   if (!isClimax) {
     if (hasPhoneActive) {
-      P.camRoll = phoneCamRoll;
-      P.camPitch = phoneCamPitch;
+      P.camRoll = clamp(targetRoll / Math.max(1, realPhones.length), -50, 50);
+      P.camPitch = clamp(targetPitch / Math.max(1, realPhones.length), -40, 40);
     } else if ($('#mouseDev').checked && isMouseActive) {
       P.camRoll = mouseCamRoll;
       P.camPitch = mouseCamPitch;
@@ -447,7 +456,7 @@ function update3DWorld(now) {
   } else if (isSatellite) {
     $('#statChroma').textContent = 'Panorámica General';
   } else {
-    $('#statChroma').textContent = 'Vuelo FPV de Enjambre';
+    $('#statChroma').textContent = 'Vuelo FPV Natural';
   }
 
   // Perspectiva 3D con alabeo y cabeceo dinámico
@@ -459,12 +468,15 @@ function update3DWorld(now) {
 
   groundPlane.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${transX}px, ${transY}px, 0) scale(${scale})`;
 
-  // Ciclo cromático autónomo en fase de clímax irreversible
-  if (isClimax) autonomousHue = (autonomousHue + 0.6) % 360;
-  const uvHue = isClimax ? autonomousHue : (P.colorExotico) % 360;
-  const sat = isSatellite ? 75 : 100;
-  const bri = isSatellite ? 80 : 100;
-  lifeCv.style.filter = `hue-rotate(${uvHue}deg) saturate(${sat}%) brightness(${bri}%)`;
+  // Filtro cromático: solo en clímax irreversible o en vista explícita UV (para no alterar la fotografía original)
+  if (isClimax) {
+    autonomousHue = (autonomousHue + 0.6) % 360;
+    lifeCv.style.filter = `hue-rotate(${autonomousHue}deg) saturate(110%) brightness(105%)`;
+  } else if (isUV) {
+    lifeCv.style.filter = `hue-rotate(220deg) saturate(135%) brightness(110%)`;
+  } else {
+    lifeCv.style.filter = 'none';
+  }
 
   // Renderizar Partículas del Enjambre
   pgx.clearRect(0, 0, partCv.width, partCv.height);
@@ -693,6 +705,8 @@ stage.addEventListener('wheel', e => {
 
 stage.addEventListener('pointerdown', e => {
   ensureAudio().catch(() => {});
+  // El ratón de la laptop no interfiere a menos que se active explícitamente la casilla de prueba
+  if (!$('#mouseDev').checked) return;
   const hasRealPhone = Object.values(tacto.devices).some(d => d.online && d.id !== 'raton');
   if (hasRealPhone || isClimax) return;
   mouseIsDown = true;
@@ -713,6 +727,7 @@ stage.addEventListener('pointerdown', e => {
 });
 
 stage.addEventListener('pointermove', e => {
+  if (!$('#mouseDev').checked) return;
   const hasRealPhone = Object.values(tacto.devices).some(d => d.online && d.id !== 'raton');
   if (hasRealPhone) {
     mouseInside = false;
@@ -1035,12 +1050,72 @@ $('#impFile').onchange = async e => {
   e.target.value = '';
 };
 
-// ============================ QR, SALA Y PANTALLA COMPLETA ============
+// ============================ QR, SALA Y LOBBY OBLIGATORIO ============
 const qrLib = () => window.qrcode ? Promise.resolve() : new Promise((ok, no) => {
   const s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
   s.onload = ok; s.onerror = no; document.head.appendChild(s);
 });
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[s]);
+}
+
+function updateLobbyPlayers() {
+  const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
+  const count = realPhones.length;
+  const countEl = $('#playerCount');
+  const listEl = $('#playerList');
+  const startBtn = $('#startGameBtn');
+
+  if (countEl) countEl.textContent = String(count);
+
+  if (listEl) {
+    if (count === 0) {
+      listEl.innerHTML = '<span class="no-players">Esperando que al menos un teléfono escanee el QR y entre…</span>';
+    } else {
+      listEl.innerHTML = realPhones.map(d => `
+        <div class="player-pill">
+          <span class="player-dot"></span>
+          <span>🐝 <b>${escapeHtml(d.name || 'Invitado')}</b></span>
+          <span class="player-status">(Listo para volar)</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  if (startBtn) {
+    if (count === 0) {
+      startBtn.disabled = true;
+      startBtn.style.opacity = '0.5';
+      startBtn.style.cursor = 'not-allowed';
+      startBtn.textContent = '⏳ Esperando al menos 1 teléfono…';
+    } else {
+      startBtn.disabled = false;
+      startBtn.style.opacity = '1';
+      startBtn.style.cursor = 'pointer';
+      startBtn.textContent = `🚀 INICIAR VUELO DE LA COLMENA (${count} jugador${count > 1 ? 'es' : ''} listo${count > 1 ? 's' : ''})`;
+    }
+  }
+}
+
+// Botones del Lobby y Navegación
+const lobbyModal = $('#lobbyModal');
+const startGameBtn = $('#startGameBtn');
+if (startGameBtn) {
+  startGameBtn.onclick = async () => {
+    if (startGameBtn.disabled) return;
+    if (lobbyModal) lobbyModal.classList.add('hidden');
+    await ensureAudio();
+  };
+}
+
+const reopenLobbyBtn = $('#reopenLobbyBtn');
+if (reopenLobbyBtn) {
+  reopenLobbyBtn.onclick = () => {
+    if (lobbyModal) lobbyModal.classList.remove('hidden');
+  };
+}
 
 async function updateJoin() {
   const CFG = window.TACTO_CONFIG || {}, Q = new URLSearchParams(location.search);
@@ -1052,39 +1127,60 @@ async function updateJoin() {
   if (!base) base = new URL('index.html', location.href).href;
   let u = base + (base.includes('?') ? '&' : '?') + 'sala=' + tacto.sala;
   if (!local || Q.get('broker')) u += '&broker=' + encodeURIComponent(tacto.broker || Tacto.PUBLIC_BROKER);
-  $('#phoneUrl').textContent = u;
-  $('#lblSala').textContent = tacto.sala;
-  if (local) { $('#qr').src = 'qr.svg?u=' + encodeURIComponent(u); $('#qr').hidden = false; return; }
+
+  // Actualizar textos en panel inferior y en modal pop-up de lobby
+  if ($('#phoneUrl')) $('#phoneUrl').textContent = u;
+  if ($('#lblSala')) $('#lblSala').textContent = tacto.sala;
+  if ($('#lobbyUrl')) $('#lobbyUrl').textContent = u;
+  if ($('#lobbySala')) $('#lobbySala').textContent = tacto.sala;
+
+  const lobbyQr = $('#lobbyQr');
+  const bottomQr = $('#qr');
+
+  if (local) {
+    const qrSrc = 'qr.svg?u=' + encodeURIComponent(u);
+    if (bottomQr) { bottomQr.src = qrSrc; bottomQr.hidden = false; }
+    if (lobbyQr) { lobbyQr.src = qrSrc; lobbyQr.hidden = false; }
+    return;
+  }
   try {
     await qrLib();
     const q = window.qrcode(0, 'M'); q.addData(u); q.make();
-    $('#qr').src = q.createDataURL(4, 4); $('#qr').hidden = false;
-  } catch { $('#qr').hidden = true; }
+    const qrData = q.createDataURL(4, 4);
+    if (bottomQr) { bottomQr.src = qrData; bottomQr.hidden = false; }
+    if (lobbyQr) { lobbyQr.src = qrData; lobbyQr.hidden = false; }
+  } catch {
+    if (bottomQr) bottomQr.hidden = true;
+    if (lobbyQr) lobbyQr.hidden = true;
+  }
 }
 
 $('#salaNueva').onclick = () => {
   tacto.cambiarSala(Tacto.nuevaSala());
   updateJoin();
+  updateLobbyPlayers();
 };
 
-const fsBtn = $('#fsBtn');
-fsBtn.onclick = () => {
-  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-  fsEl ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
-       : (stage.requestFullscreen || stage.webkitRequestFullscreen).call(stage);
-};
+tacto.on('dispositivo', () => {
+  updateLobbyPlayers();
+});
+tacto.on('datos', () => {
+  updateLobbyPlayers();
+});
 
 // ============================ BUCLE PRINCIPAL =========================
 renderRows();
 updateJoin();
+updateLobbyPlayers();
 tacto.connect().then(() => {
   $('#brokerInfo').textContent = tacto.broker.replace(/^wss?:\/\//, '');
   updateJoin();
+  updateLobbyPlayers();
 }).catch(e => { $('#estado').textContent = '● ' + (e.message || 'sin conexión'); });
 
 let frame = 0;
 (function mainLoop(now) {
-  // Registrar ratón en tacto.devices SOLO si no hay teléfono conectado
+  // Registrar ratón en tacto.devices SOLO si está marcado el modo de prueba y no hay teléfono
   const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
   if ($('#mouseDev').checked && realPhones.length === 0) {
     tacto.devices['raton'] = {
@@ -1113,6 +1209,7 @@ let frame = 0;
 
   if (++frame % 4 === 0) {
     updateMeters();
+    updateLobbyPlayers();
     const activePhones = Object.values(tacto.devices).filter(k => k.online && k.id !== 'raton');
     if (activePhones.length > 0) {
       $('#waiting').innerHTML = `<b>📱 PRÓTESIS CONECTADA (${activePhones[0].name || 'Teléfono'})</b><span>Giroscopio y tacto activos · Inclina para volar y toca la pantalla para fecundar.</span>`;
@@ -1123,7 +1220,7 @@ let frame = 0;
       }
     } else {
       window.__phoneToastDismissed = false;
-      $('#waiting').innerHTML = `<b>Esperando conexión con teléfonos polinizadores...</b><span>Escanea el QR en el panel inferior con tu teléfono para activar el giroscopio y tacto.</span>`;
+      $('#waiting').innerHTML = `<b>Esperando conexión con teléfonos polinizadores...</b><span>Escanea el QR en pantalla con tu teléfono para activar el giroscopio y tacto.</span>`;
       $('#waiting').style.borderColor = 'var(--line-2)';
       $('#waiting').hidden = $('#mouseDev').checked;
     }
