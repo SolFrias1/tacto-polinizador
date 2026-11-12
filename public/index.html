@@ -28,17 +28,9 @@
   #cv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #hud { position: absolute; left: 12px; top: 10px; right: 12px; font: 12px/1.5 var(--mono); color: #d8d2ee; pointer-events: none; white-space: pre; text-shadow: 0 1px 2px #000; overflow: hidden; }
   #hint { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mut); pointer-events: none; text-align: center; padding: 0 32px; font-size: 15px; }
-  #mods { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
-  .mod { background: var(--card); border: 1px solid var(--line); color: var(--mut); padding: 10px 4px; font-size: 14px; font-weight: 500; min-height: 56px; }
-  .mod[aria-pressed="true"], .mod.active { border-color: var(--vio-2); color: var(--fg); background: #271c42; box-shadow: inset 0 0 0 1px var(--vio); }
-  .mod { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .mod::before { content: "APAGADO"; font-size: 9px; letter-spacing: .12em; font-weight: 700; color: var(--mut); margin-bottom: 2px; }
-  .mod[aria-pressed="true"]::before { content: "ACTIVO"; color: var(--neo); }
-  #surface:active { border-color: var(--vio-2); }
-  .mod small { display: block; font-weight: 400; font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; color: var(--mut); }
-  .mod.active small { color: var(--neo); }
+  #motionBar { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; font-size: 13px; color: var(--mut); margin-top: 4px; }
   .msg { font-size: 13px; }
-  @media (max-height: 520px) { #mods { grid-template-columns: repeat(3, 1fr); } .mod { min-height: 44px; padding: 6px 4px; } #hud { font-size: 11px; } }
+  @media (max-height: 520px) { #hud { font-size: 11px; } }
 </style>
 </head>
 <body>
@@ -65,10 +57,9 @@
       📱 <b>Inclina</b> el teléfono en el aire para volar · <b>Toca</b> la pantalla para fecundar flores
     </div>
     <div id="surface"><canvas id="cv" aria-hidden="true"></canvas><div id="hud" aria-hidden="true"></div><div id="hint">🌿 Mueve el teléfono en el aire para dirigir el vuelo 3D<br><br>✨ Toca y arrastra aquí para fecundar el prado</div></div>
-    <div id="mods">
-      <button class="mod" id="m-motion" aria-pressed="false">Giro<small id="v-motion">–</small></button>
-      <button class="mod" id="m-mic" aria-pressed="false">Micrófono<small id="v-mic">–</small></button>
-      <button class="mod" id="m-cam" aria-pressed="false">Cámara<small id="v-cam">–</small></button>
+    <div id="motionBar">
+      <span>🧭 Prótesis de vuelo</span>
+      <b id="v-motion" style="color:var(--neo);">Tacto & Giroscopio Activos</b>
     </div>
     <div class="msg" id="err2" role="alert"></div>
   </div>
@@ -95,7 +86,7 @@ const S = { f: { min: 9, max: -1, n: 0 }, d: { min: 1e9, max: -1, n: 0 } };
 const quality = (s, eps) => (!s.n ? 'sin datos aún' : s.max <= 0 ? 'sin dato' : s.n > 20 && s.max - s.min < eps ? 'constante' : 'variable');
 const caps = () => ({ presion: quality(S.f, 0.02), diametro: quality(S.d, 1), tacto: 'ontouchstart' in window ? 'touch' : 'puntero' });
 let lastCaps = '';
-function publishStatus() { pub('status', { online: true, name, caps: { ...caps(), motion: motionOn, mic: !!micStream, cam: !!camStream } }, 1, true); }
+function publishStatus() { pub('status', { online: true, name, caps: { ...caps(), motion: motionOn } }, 1, true); }
 
 // ---------- conexión MQTT ----------
 async function connect() {
@@ -174,22 +165,51 @@ surf.addEventListener('pointerup', pend); surf.addEventListener('pointercancel',
 // Dibujo y panel de datos
 function draw() {
   const r = surf.getBoundingClientRect(); g.clearRect(0, 0, r.width, r.height);
+  const isLandscape = r.width > r.height;
+
+  // Guía visual interactiva de control
+  if (cur.p.length === 0) {
+    g.save();
+    g.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    g.lineWidth = 1;
+    if (isLandscape) {
+      g.beginPath();
+      g.moveTo(r.width / 2, 16);
+      g.lineTo(r.width / 2, r.height - 16);
+      g.stroke();
+
+      g.fillStyle = 'rgba(163, 230, 53, 0.45)';
+      g.font = 'bold 12px system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.fillText('🕹️ TIMÓN DE VUELO (PULGAR IZQ)', r.width * 0.25, r.height / 2);
+      g.fillText('🌸 FECUNDAR FLORES (PULGAR DER)', r.width * 0.75, r.height / 2);
+    } else {
+      g.fillStyle = 'rgba(163, 230, 53, 0.45)';
+      g.font = 'bold 13px system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.fillText('🌿 DESLIZA PARA VOLAR Y FECUNDAR', r.width / 2, r.height / 2);
+    }
+    g.restore();
+  }
+
   for (const z of cur.p) {
-    const x = z.x * r.width, y = z.y * r.height, rad = Math.max(22, z.d / 2);
+    const x = z.x * r.width, y = z.y * r.height, rad = Math.max(26, z.d / 2);
     g.fillStyle = `hsla(${270 + z.f * 80},85%,62%,${0.25 + z.f * 0.5})`; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill();
-    g.strokeStyle = '#e6ff3d'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, rad, 0, 7); g.stroke();
+    g.strokeStyle = '#e6ff3d'; g.lineWidth = 2.5; g.beginPath(); g.arc(x, y, rad, 0, 7); g.stroke();
     g.beginPath(); g.moveTo(x - rad - 10, y); g.lineTo(x + rad + 10, y); g.moveTo(x, y - rad - 10); g.lineTo(x, y + rad + 10); g.stroke();
-    g.fillStyle = '#fff'; g.font = '13px system-ui'; g.textAlign = 'center'; g.fillText(z.i, x, y - rad - 14);
+    g.fillStyle = '#fff'; g.font = 'bold 13px system-ui'; g.textAlign = 'center';
+    const label = isLandscape ? (z.x < 0.5 ? '🕹️ Timón' : '🌸 Polen') : '🐝 ' + z.i;
+    g.fillText(label, x, y - rad - 14);
   }
   const c = caps(), lines = [`dedos ${cur.n}`];
-  for (const z of cur.p) lines.push(`${z.i}  x ${r2(z.x).toFixed(2)}  y ${r2(z.y).toFixed(2)}  presión ${r2(z.f).toFixed(2)}  ⌀ ${Math.round(z.d)} px`);
-  lines.push(`presión: ${c.presion} · diámetro: ${c.diametro}`);
+  for (const z of cur.p) lines.push(`${z.i}  x ${r2(z.x).toFixed(2)}  y ${r2(z.y).toFixed(2)}`);
+  lines.push(`modo: ${isLandscape ? 'horizontal (control de play)' : 'vertical'}`);
   $('#hud').textContent = lines.join('\n');
   requestAnimationFrame(draw);
 }
 setInterval(() => { const k = JSON.stringify(caps()); if (k !== lastCaps) { lastCaps = k; publishStatus(); } }, 700);
 
-// ---------- giro (orientación, velocidad de giro y aceleración) ----------
+// ---------- giro (orientación normalizada para horizontal / play y vertical) ----------
 let motionOn = false, bound = false, ang = null, rot = null, acc = null, mdirty = false;
 async function askMotion() { // iOS exige permiso explícito desde un gesto; Android no
   for (const R of [window.DeviceMotionEvent, window.DeviceOrientationEvent])
@@ -200,71 +220,50 @@ async function askMotion() { // iOS exige permiso explícito desde un gesto; And
 }
 function bindMotion() {
   if (bound) return; bound = true;
-  addEventListener('deviceorientation', e => { ang = [e.alpha || 0, e.beta || 0, e.gamma || 0]; mdirty = true; });
+  addEventListener('deviceorientation', e => {
+    const rawA = e.alpha || 0, rawB = e.beta || 0, rawG = e.gamma || 0;
+    // Detección automática: horizontal (control de play) vs vertical
+    const oAngle = (screen.orientation && screen.orientation.angle != null) ? screen.orientation.angle : (window.orientation || 0);
+    const isLand = Math.abs(oAngle) === 90 || oAngle === 270 || (window.innerWidth > window.innerHeight);
+
+    let roll = rawG;
+    let pitch = rawB;
+
+    if (oAngle === 90) {
+      // Horizontal girado a la izquierda (como control de play estándar)
+      roll = -rawB;
+      pitch = rawG;
+    } else if (oAngle === 270 || oAngle === -90) {
+      // Horizontal girado a la derecha
+      roll = rawB;
+      pitch = -rawG;
+    } else if (isLand && Math.abs(rawG) > Math.abs(rawB)) {
+      roll = -rawB;
+      pitch = rawG;
+    }
+
+    ang = [rawA, pitch, roll];
+    mdirty = true;
+  });
   addEventListener('devicemotion', e => {
     const r = e.rotationRate, a = e.accelerationIncludingGravity;
-    if (r) rot = [r.beta || 0, r.gamma || 0, r.alpha || 0]; // ejes X, Y, Z en °/s
-    if (a) acc = [a.x || 0, a.y || 0, a.z || 0]; mdirty = true;
+    if (r) rot = [r.beta || 0, r.gamma || 0, r.alpha || 0];
+    if (a) acc = [a.x || 0, a.y || 0, a.z || 0];
+    mdirty = true;
   });
   setInterval(() => {
     if (!motionOn || !mdirty) return; mdirty = false;
     pub('motion', { t: Date.now(), a: ang && ang.map(r1), r: rot && rot.map(r1), c: acc && acc.map(r2) });
-    if (ang) $('#v-motion').textContent = `${Math.round(ang[1])}° ${Math.round(ang[2])}°`;
+    if (ang) {
+      const oAngle = (screen.orientation && screen.orientation.angle != null) ? screen.orientation.angle : (window.orientation || 0);
+      const mode = (Math.abs(oAngle) === 90 || oAngle === 270 || window.innerWidth > window.innerHeight) ? '🎮 Horizontal (Play)' : '📱 Vertical';
+      $('#v-motion').textContent = `${mode} · ${Math.round(ang[2])}°`;
+    }
   }, 33);
 }
 
-// ---------- micrófono ----------
-let micCtx, micStream, micTimer;
-async function startMic() {
-  micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-  micCtx = new (window.AudioContext || window.webkitAudioContext)(); await micCtx.resume();
-  const an = micCtx.createAnalyser(); an.fftSize = 1024; micCtx.createMediaStreamSource(micStream).connect(an);
-  const t = new Float32Array(an.fftSize), f = new Uint8Array(an.frequencyBinCount), hz = micCtx.sampleRate / an.fftSize;
-  const band = (a, b) => { let s = 0, n = 0; for (let i = Math.max(1, Math.floor(a / hz)); i < Math.min(f.length, Math.ceil(b / hz)); i++) { s += f[i]; n++; } return n ? s / n / 255 : 0; };
-  micTimer = setInterval(() => {
-    an.getFloatTimeDomainData(t); let s = 0; for (const v of t) s += v * v; an.getByteFrequencyData(f);
-    const l = Math.min(1, Math.sqrt(s / t.length) * 4);
-    pub('mic', { t: Date.now(), l: r3(l), b: [r3(band(40, 250)), r3(band(250, 2000)), r3(band(2000, 8000))] });
-    $('#v-mic').textContent = '█'.repeat(Math.round(l * 6)) || '·';
-  }, 50);
-}
-function stopMic() { clearInterval(micTimer); micStream?.getTracks().forEach(t => t.stop()); micCtx?.close(); micStream = micCtx = null; }
-
-// ---------- cámara: movimiento y brillo calculados en el teléfono (no sale video) ----------
-let camStream, camTimer, prev = null;
-const W = 64, H = 36, work = document.createElement('canvas'); work.width = W; work.height = H;
-const wctx = work.getContext('2d', { willReadFrequently: true });
-async function startCam() {
-  camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 640, height: 360 }, audio: false });
-  const vid = document.createElement('video'); vid.playsInline = true; vid.muted = true; vid.srcObject = camStream; await vid.play();
-  prev = null; let sm = 0;
-  camTimer = setInterval(() => {
-    wctx.drawImage(vid, 0, 0, W, H); const px = wctx.getImageData(0, 0, W, H).data, gray = new Uint8Array(W * H);
-    let bsum = 0; for (let i = 0; i < gray.length; i++) { gray[i] = (px[i * 4] * 0.3 + px[i * 4 + 1] * 0.59 + px[i * 4 + 2] * 0.11) | 0; bsum += gray[i]; }
-    if (prev) {
-      let n = 0, sx = 0, sy = 0;
-      for (let i = 0; i < gray.length; i++) if (Math.abs(gray[i] - prev[i]) > 25) { n++; sx += i % W; sy += (i / W) | 0; }
-      sm = sm * 0.4 + (n / gray.length) * 0.6;
-      pub('cam', { t: Date.now(), m: r3(sm), x: n ? r3(sx / n / W) : 0.5, y: n ? r3(sy / n / H) : 0.5, b: r3(bsum / gray.length / 255) });
-      $('#v-cam').textContent = Math.round(sm * 100) + '%';
-    }
-    prev = gray;
-  }, 80);
-}
-function stopCam() { clearInterval(camTimer); camStream?.getTracks().forEach(t => t.stop()); camStream = null; }
-
-// ---------- botones ----------
 const setOn = (id, on) => { $(id).classList.toggle('active', on); $(id).setAttribute('aria-pressed', on); };
 const fail = e => { $('#err2').textContent = e.message || String(e); };
-$('#m-motion').onclick = async () => {
-  try { $('#err2').textContent = ''; if (!motionOn) { await askMotion(); bindMotion(); } motionOn = !motionOn; setOn('#m-motion', motionOn); if (!motionOn) $('#v-motion').textContent = '–'; publishStatus(); } catch (e) { fail(e); }
-};
-$('#m-mic').onclick = async () => {
-  try { $('#err2').textContent = ''; if (micStream) { stopMic(); setOn('#m-mic', false); $('#v-mic').textContent = '–'; } else { await startMic(); setOn('#m-mic', true); } publishStatus(); } catch (e) { fail(e); }
-};
-$('#m-cam').onclick = async () => {
-  try { $('#err2').textContent = ''; if (camStream) { stopCam(); setOn('#m-cam', false); $('#v-cam').textContent = '–'; } else { await startCam(); setOn('#m-cam', true); } publishStatus(); } catch (e) { fail(e); }
-};
 
 // ---------- entrar ----------
 async function wake() { try { await navigator.wakeLock?.request('screen'); } catch {} }

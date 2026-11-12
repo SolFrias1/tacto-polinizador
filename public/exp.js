@@ -363,42 +363,16 @@ function getActivePollinators() {
       isDown
     });
   }
-
-  // Ratón de laptop: SOLO si NO hay teléfonos reales conectados y está habilitado
-  if (realPhones.length === 0 && $('#mouseDev').checked && !isClimax) {
-    if (mouseIsDown) {
-      list.push({
-        id: 'raton', name: 'laptop',
-        tx: mouseCoords.x, ty: mouseCoords.y,
-        td: isRightClick ? 95 : 42,
-        tn: simulatedFingers,
-        isDown: true
-      });
-    } else if (mouseInside) {
-      // Ratón sobrevolando (curiosidad del enjambre sin pintar)
-      list.push({
-        id: 'raton_hover', name: 'guía',
-        tx: mouseCoords.x, ty: mouseCoords.y,
-        td: 20,
-        tn: 1,
-        isDown: false
-      });
-    }
-  }
-
   return list;
 }
 
 // ============================ BUCLE 3D Y PERSPECTIVA ==================
 let curCamRoll = 0, curCamPitch = 0;
-let mouseCamRoll = 0, mouseCamPitch = 0;
-let phoneCamRoll = 0, phoneCamPitch = 0;
-let lastMouseMoveTime = 0, lastPhoneMoveTime = 0;
 
 function update3DWorld(now) {
   syncCanvasSizes();
 
-  // Control de vuelo continuo desde teléfonos móviles (Tacto + Giroscopio)
+  // Control de vuelo continuo exclusivo desde teléfonos móviles (Tacto + Giroscopio)
   let hasPhoneActive = false;
   let targetRoll = 0, targetPitch = 0;
   const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
@@ -406,26 +380,38 @@ function update3DWorld(now) {
   for (const dev of realPhones) {
     hasPhoneActive = true;
     const isDown = (dev.ch['touch.down'] || 0) >= 0.5;
-    const tx = dev.ch['touch.x'];
-    const ty = dev.ch['touch.y'];
+    const tx = dev.ch['touch.x'] ?? 0.5;
+    const ty = dev.ch['touch.y'] ?? 0.5;
 
-    // 1. Navegación táctil directa: deslizar el dedo en la pantalla del móvil actúa como timón de vuelo
-    if (tx != null && ty != null && isDown) {
-      const touchRoll = (tx - 0.5) * 80;
-      const touchPitch = (ty - 0.5) * 60;
+    // Soporte para modo Horizontal (Control de Play) con 2 pulgares:
+    // Pulgar izquierdo dirige el timón de vuelo, pulgar derecho fecunda el campo
+    let steerX = tx, steerY = ty;
+    const t1x = dev.ch['t1.x'], t1y = dev.ch['t1.y'];
+    const t2x = dev.ch['t2.x'], t2y = dev.ch['t2.y'];
+    const hasTwoFingers = t1x != null && t2x != null;
+
+    if (hasTwoFingers) {
+      if (t1x <= t2x) { steerX = t1x; steerY = t1y; }
+      else { steerX = t2x; steerY = t2y; }
+    }
+
+    if (isDown) {
+      const centerTargetX = hasTwoFingers ? 0.25 : 0.5;
+      const touchRoll = (steerX - centerTargetX) * 90;
+      const touchPitch = (steerY - 0.5) * 65;
       targetRoll += touchRoll;
       targetPitch += touchPitch;
     }
 
-    // 2. Navegación por giroscopio (inclinación física en el aire)
+    // Navegación por giroscopio (normalizado automáticamente para posición horizontal o vertical)
     const gy = dev.ch['ang.g'];
     const gx = dev.ch['ang.b'];
     if (gy != null && gx != null) {
-      const gyroRoll = clamp(gy * 0.95, -45, 45);
-      const gyroPitch = clamp((gx - 35) * 0.85, -35, 35);
+      const gyroRoll = clamp(gy * 0.95, -50, 50);
+      const gyroPitch = clamp((gx - 35) * 0.85, -40, 40);
       if (isDown) {
-        targetRoll += gyroRoll * 0.4;
-        targetPitch += gyroPitch * 0.4;
+        targetRoll += gyroRoll * 0.45;
+        targetPitch += gyroPitch * 0.45;
       } else {
         targetRoll += gyroRoll;
         targetPitch += gyroPitch;
@@ -439,18 +425,11 @@ function update3DWorld(now) {
     }
   }
 
-  // Prioridad absoluta al teléfono como prótesis insectil:
-  // Si hay un teléfono conectado, gobierna la orientación de vuelo.
-  // El ratón de laptop solo interviene si se marca explícitamente la casilla de prueba.
-  const isMouseActive = mouseInside || mouseIsDown || (now - lastMouseMoveTime < 2200);
-
+  // La orientación de vuelo y la fecundación están exclusivamente reservadas a los teléfonos
   if (!isClimax) {
     if (hasPhoneActive) {
-      P.camRoll = clamp(targetRoll / Math.max(1, realPhones.length), -50, 50);
-      P.camPitch = clamp(targetPitch / Math.max(1, realPhones.length), -40, 40);
-    } else if ($('#mouseDev').checked && isMouseActive) {
-      P.camRoll = mouseCamRoll;
-      P.camPitch = mouseCamPitch;
+      P.camRoll = clamp(targetRoll / Math.max(1, realPhones.length), -60, 60);
+      P.camPitch = clamp(targetPitch / Math.max(1, realPhones.length), -45, 45);
     } else {
       P.camRoll = 0;
       P.camPitch = 0;
@@ -495,7 +474,7 @@ function update3DWorld(now) {
   pgx.clearRect(0, 0, partCv.width, partCv.height);
   const pollinators = getActivePollinators();
   const onlinePhones = Object.values(tacto.devices).filter(k => k.online && k.id !== 'raton');
-  $('#statPeers').textContent = String(onlinePhones.length > 0 ? onlinePhones.length : ($('#mouseDev').checked ? 1 : 0));
+  $('#statPeers').textContent = String(onlinePhones.length);
 
   const isSwarming = pollinators.length > 0 || isClimax;
 
@@ -743,57 +722,17 @@ stage.addEventListener('wheel', e => {
   });
 }, { passive: false });
 
-stage.addEventListener('pointerdown', e => {
+stage.addEventListener('pointerdown', () => {
   ensureAudio().catch(() => {});
-  // El ratón de la laptop no interfiere a menos que se active explícitamente la casilla de prueba
-  if (!$('#mouseDev').checked) return;
-  const hasRealPhone = Object.values(tacto.devices).some(d => d.online && d.id !== 'raton');
-  if (hasRealPhone || isClimax) return;
-  mouseIsDown = true;
-  isRightClick = e.button === 2 || e.shiftKey || e.altKey;
-  stage.setPointerCapture(e.pointerId);
-  const r = stage.getBoundingClientRect();
-  mouseCoords.x = clamp((e.clientX - r.left) / r.width);
-  mouseCoords.y = clamp((e.clientY - r.top) / r.height);
-  lastMoveTime = performance.now();
-  lastMouseMoveTime = performance.now();
-
-  // Fecundación visual inmediata y viva en el punto de clic (solo modo prueba laptop)
-  const sx = mouseCoords.x * partCv.width;
-  const sy = mouseCoords.y * partCv.height;
-  const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
-  const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
-  swarmDepositPollen(wx, wy, isRightClick, 1.35);
 });
 
-stage.addEventListener('pointermove', e => {
-  if (!$('#mouseDev').checked) return;
-  const hasRealPhone = Object.values(tacto.devices).some(d => d.online && d.id !== 'raton');
-  if (hasRealPhone) {
-    mouseInside = false;
-    return;
-  }
-  mouseInside = true;
-  const r = stage.getBoundingClientRect();
-  const nx = (e.clientX - r.left) / r.width - 0.5;
-  const ny = (e.clientY - r.top) / r.height - 0.5;
-  mouseCoords.x = clamp((e.clientX - r.left) / r.width);
-  mouseCoords.y = clamp((e.clientY - r.top) / r.height);
-  
-  // Orientación suave de la mirada con el cursor
-  mouseCamRoll = nx * 42;
-  mouseCamPitch = ny * 30;
-  lastMouseMoveTime = performance.now();
-
-  // Si se está arrastrando / presionando con el ratón: florecer en cada paso de la caricia
-  if (mouseIsDown && !isClimax) {
-    const sx = mouseCoords.x * partCv.width;
-    const sy = mouseCoords.y * partCv.height;
-    const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
-    const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
-    swarmDepositPollen(wx, wy, isRightClick, 1.1);
-  }
+stage.addEventListener('pointermove', () => {
+  // El ratón de la laptop solo interactúa con la plataforma (vistas, zoom con rueda, botones)
+  // La fecundación y el timón de vuelo quedan exclusivamente gobernados por los teléfonos conectados
 });
+
+stage.addEventListener('pointerleave', () => {});
+stage.addEventListener('pointerup', () => {});
 
 stage.addEventListener('pointerleave', () => {
   mouseInside = false;
@@ -1222,29 +1161,6 @@ tacto.connect().then(() => {
 
 let frame = 0;
 (function mainLoop(now) {
-  // Registrar ratón en tacto.devices SOLO si está marcado el modo de prueba y no hay teléfono
-  const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
-  if ($('#mouseDev').checked && realPhones.length === 0) {
-    tacto.devices['raton'] = {
-      id: 'raton',
-      name: 'laptop',
-      online: true,
-      last: performance.now(),
-      ch: {
-        'touch.down': mouseIsDown ? 1 : 0,
-        'touch.x': mouseCoords.x,
-        'touch.y': mouseCoords.y,
-        'touch.d': isRightClick ? 95 : 42,
-        'touch.n': simulatedFingers,
-        'touch.dist': 0.35,
-        'ang.g': mouseCamRoll,
-        'ang.b': mouseCamPitch + 35
-      }
-    };
-  } else {
-    delete tacto.devices['raton'];
-  }
-
   evalMaps();
   processGestures();
   update3DWorld(now);
@@ -1264,7 +1180,7 @@ let frame = 0;
       window.__phoneToastDismissed = false;
       $('#waiting').innerHTML = `<b>Esperando conexión con teléfonos polinizadores...</b><span>Escanea el QR en pantalla con tu teléfono para activar el giroscopio y tacto.</span>`;
       $('#waiting').style.borderColor = 'var(--line-2)';
-      $('#waiting').hidden = $('#mouseDev').checked;
+      $('#waiting').hidden = false;
     }
   }
   requestAnimationFrame(mainLoop);
