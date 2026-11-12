@@ -20,8 +20,8 @@ const T = {}, LAST = {}, P = {
 const tgt = (id, g, label, min, max, def, o = {}) => { T[id] = { id, g, label, min, max, def, ...o }; };
 const setT = (id, v) => { LAST[id] = v; if (T[id] && T[id].apply) T[id].apply(v); };
 
-tgt('vuelo.inclinacion.x', 'Vuelo 3D', 'giro de cabeza / alabeo (roll %)', -40, 40, 0, { apply: v => { P.camRoll = v; } });
-tgt('vuelo.inclinacion.y', 'Vuelo 3D', 'cabeceo / picada (pitch %)', -30, 30, 0, { apply: v => { P.camPitch = v; } });
+tgt('vuelo.inclinacion.x', 'Vuelo 3D', 'giro de cabeza / alabeo (roll %)', -40, 40, 0, { apply: v => { phoneCamRoll = v; } });
+tgt('vuelo.inclinacion.y', 'Vuelo 3D', 'cabeceo / picada (pitch %)', -30, 30, 0, { apply: v => { phoneCamPitch = v; } });
 tgt('vuelo.zoom', 'Vuelo 3D', 'inmersión macro vs satélite', 0.65, 2.6, 1.05, { apply: v => { P.zoom = v; } });
 tgt('polen.desfase', 'Polinización', 'multiplicador de dispersión', 1, 5, 1, { apply: v => { P.desfaseMult = v; } });
 tgt('flor.color_exotico', 'Polinización', 'espectro ultravioleta (°)', 0, 360, 0, { apply: v => { P.colorExotico = v; } });
@@ -125,7 +125,27 @@ async function initSoundscape() {
   $('#audioBtn').classList.remove('primary');
 }
 
-$('#audioBtn').onclick = initSoundscape;
+let audioInited = false;
+async function ensureAudio() {
+  if (audioInited && A.ctx && A.ctx.state === 'running') return;
+  try {
+    if (!A.ctx) {
+      await initSoundscape();
+    } else if (A.ctx.state === 'suspended') {
+      await A.ctx.resume();
+    }
+    audioInited = true;
+  } catch (err) {
+    console.warn('Audio auto-resume:', err);
+  }
+}
+
+// Activar audio automáticamente con el primer gesto en cualquier parte de la ventana
+window.addEventListener('pointerdown', ensureAudio, { passive: true });
+window.addEventListener('click', ensureAudio, { passive: true });
+window.addEventListener('keydown', ensureAudio, { passive: true });
+
+$('#audioBtn').onclick = () => { ensureAudio(); };
 
 // Audición interactiva de sonidos desde el Cajón 2 (prueba aislada)
 document.querySelectorAll('#soundBadges .sound-badge').forEach(badge => {
@@ -311,7 +331,7 @@ function getActivePollinators() {
   const list = [];
   
   for (const dev of Object.values(tacto.devices)) {
-    if (!dev.online) continue;
+    if (!dev.online || dev.id === 'raton') continue;
     const isDown = (dev.ch['touch.down'] || 0) >= 0.5;
     if (isDown) {
       list.push({
@@ -354,23 +374,28 @@ function getActivePollinators() {
 
 // ============================ BUCLE 3D Y PERSPECTIVA ==================
 let curCamRoll = 0, curCamPitch = 0;
-let phoneStreaming = false;
+let mouseCamRoll = 0, mouseCamPitch = 0;
+let phoneCamRoll = 0, phoneCamPitch = 0;
+let lastMouseMoveTime = 0, lastPhoneMoveTime = 0;
 
 function update3DWorld(now) {
   syncCanvasSizes();
 
   // Control de vuelo continuo desde el giroscopio de cualquier teléfono móvil
-  phoneStreaming = false;
+  let hasPhoneActive = false;
   for (const dev of Object.values(tacto.devices)) {
-    if (!dev.online) continue;
+    if (!dev.online || dev.id === 'raton') continue;
     const gy = dev.ch['ang.g'];
     const gx = dev.ch['ang.b'];
     if (gy != null && gx != null) {
-      phoneStreaming = true;
-      // Inclinación lateral (alabeo / Roll) en el aire
-      P.camRoll = clamp(gy * 0.95, -45, 45);
-      // Inclinación adelante/atrás (cabeceo / Pitch)
-      P.camPitch = clamp((gx - 35) * 0.85, -35, 35);
+      const pRoll = clamp(gy * 0.95, -45, 45);
+      const pPitch = clamp((gx - 35) * 0.85, -35, 35);
+      if (Math.abs(pRoll - phoneCamRoll) > 0.3 || Math.abs(pPitch - phoneCamPitch) > 0.3) {
+        lastPhoneMoveTime = now;
+      }
+      phoneCamRoll = pRoll;
+      phoneCamPitch = pPitch;
+      hasPhoneActive = true;
     }
     // Zoom táctil desde el teléfono con 2 dedos
     const td = dev.ch['touch.dist'];
@@ -379,9 +404,32 @@ function update3DWorld(now) {
     }
   }
 
+  // Prioridad simbiótica de navegación (Ratón de laptop + Teléfono como prótesis):
+  // 1. Si el cursor se mueve en el lienzo o está arrastrándose, responde directamente al ratón.
+  // 2. Si el teléfono se inclina en el aire, responde al teléfono.
+  // 3. Permite que ambos coexistan sin bloquearse.
+  const isMouseActive = mouseInside || mouseIsDown || (now - lastMouseMoveTime < 2200);
+  const isPhoneRecentlyMoved = hasPhoneActive && (now - lastPhoneMoveTime < 2000);
+
+  if (!isClimax) {
+    if (isPhoneRecentlyMoved && !mouseInside && !mouseIsDown) {
+      P.camRoll = phoneCamRoll;
+      P.camPitch = phoneCamPitch;
+    } else if (isMouseActive) {
+      P.camRoll = mouseCamRoll;
+      P.camPitch = mouseCamPitch;
+    } else if (hasPhoneActive) {
+      P.camRoll = phoneCamRoll;
+      P.camPitch = phoneCamPitch;
+    } else {
+      P.camRoll = 0;
+      P.camPitch = 0;
+    }
+  }
+
   // Suavizado cinemático con inercia aérea viva
-  curCamRoll += (P.camRoll - curCamRoll) * 0.075;
-  curCamPitch += (P.camPitch - curCamPitch) * 0.075;
+  curCamRoll += (P.camRoll - curCamRoll) * 0.085;
+  curCamPitch += (P.camPitch - curCamPitch) * 0.085;
 
   const isUV = $('#stageWrap').classList.contains('uv-active');
   const isSatellite = P.zoom < 0.9;
@@ -616,7 +664,8 @@ stage.addEventListener('wheel', e => {
   });
 }, { passive: false });
 
-stage.addEventListener('pointerdown', e => {
+stage.addEventListener('pointerdown', async e => {
+  await ensureAudio();
   if (!$('#mouseDev').checked || isClimax) return;
   mouseIsDown = true;
   isRightClick = e.button === 2 || e.shiftKey || e.altKey;
@@ -625,6 +674,7 @@ stage.addEventListener('pointerdown', e => {
   mouseCoords.x = clamp((e.clientX - r.left) / r.width);
   mouseCoords.y = clamp((e.clientY - r.top) / r.height);
   lastMoveTime = performance.now();
+  lastMouseMoveTime = performance.now();
 });
 
 stage.addEventListener('pointermove', e => {
@@ -636,18 +686,16 @@ stage.addEventListener('pointermove', e => {
   mouseCoords.x = clamp((e.clientX - r.left) / r.width);
   mouseCoords.y = clamp((e.clientY - r.top) / r.height);
   
-  if (!isClimax && !phoneStreaming) {
-    P.camRoll = nx * 44;
-    P.camPitch = ny * 32;
-  }
+  // Orientación suave de la mirada con el cursor
+  mouseCamRoll = nx * 42;
+  mouseCamPitch = ny * 30;
+  lastMouseMoveTime = performance.now();
 });
 
 stage.addEventListener('pointerleave', () => {
   mouseInside = false;
-  if (!isClimax) {
-    P.camRoll = 0;
-    P.camPitch = 0;
-  }
+  mouseCamRoll = 0;
+  mouseCamPitch = 0;
 });
 
 stage.addEventListener('pointerup', e => {
@@ -993,13 +1041,35 @@ tacto.connect().then(() => {
 
 let frame = 0;
 (function mainLoop(now) {
+  // Registrar ratón en tacto.devices para sincronizar medidores y matrices
+  if ($('#mouseDev').checked) {
+    tacto.devices['raton'] = {
+      id: 'raton',
+      name: 'laptop',
+      online: true,
+      last: performance.now(),
+      ch: {
+        'touch.down': mouseIsDown ? 1 : 0,
+        'touch.x': mouseCoords.x,
+        'touch.y': mouseCoords.y,
+        'touch.d': isRightClick ? 95 : 42,
+        'touch.n': simulatedFingers,
+        'touch.dist': 0.35,
+        'ang.g': mouseCamRoll,
+        'ang.b': mouseCamPitch + 35
+      }
+    };
+  } else {
+    delete tacto.devices['raton'];
+  }
+
   evalMaps();
   processGestures();
   update3DWorld(now);
 
   if (++frame % 4 === 0) {
     updateMeters();
-    const onlineDevs = Object.keys(tacto.devices).filter(k => tacto.devices[k].online).length;
+    const onlineDevs = Object.keys(tacto.devices).filter(k => tacto.devices[k].online && k !== 'raton').length;
     const isMouseReady = $('#mouseDev').checked;
     $('#waiting').hidden = isMouseReady || onlineDevs > 0;
   }
