@@ -704,7 +704,8 @@ stage.addEventListener('wheel', e => {
 
 stage.addEventListener('pointerdown', e => {
   ensureAudio().catch(() => {});
-  if (!$('#mouseDev').checked || isClimax) return;
+  $('#mouseDev').checked = true;
+  if (isClimax) return;
   mouseIsDown = true;
   isRightClick = e.button === 2 || e.shiftKey || e.altKey;
   stage.setPointerCapture(e.pointerId);
@@ -723,7 +724,6 @@ stage.addEventListener('pointerdown', e => {
 });
 
 stage.addEventListener('pointermove', e => {
-  if (!$('#mouseDev').checked) return;
   mouseInside = true;
   const r = stage.getBoundingClientRect();
   const nx = (e.clientX - r.left) / r.width - 0.5;
