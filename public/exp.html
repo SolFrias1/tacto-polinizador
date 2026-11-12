@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UMWELT · El Jardín de Frankenstein</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+
+<!-- NAVEGACIÓN SUPERIOR FLOTANTE -->
+<nav class="top-bar">
+  <b>UMWELT <span>· Jardín Frankenstein</span></b>
+  <div class="nav-links">
+    <a href="#curatorial">Manifiesto</a>
+    <a href="#arena">El Prado 3D</a>
+    <a href="#backstage">Matriz y QR</a>
+    <span id="estado" class="dot" role="status">● sin conexión</span>
+    <span id="rtt" style="color:var(--mut)"></span>
+    <button id="audioBtn" class="primary">Activar Ecosistema Acústico</button>
+  </div>
+</nav>
+
+<!-- 1. CARÁTULA POÉTICA -->
+<section class="hero-cover">
+  <div class="hero-tag">EXPERIENCIA COLECTIVA · PROTOCOLO SHELLEY-UEXKÜLL</div>
+  <h1 class="hero-title">
+    ¿Qué pasa si intentamos hacer florecer un campo,<br>
+    pero no sabemos qué es <em>ser abeja</em>?
+  </h1>
+  <p class="hero-sub">
+    Una exploración interactiva sobre el abismo entre la caricia humana y el cálculo maquínico. 
+    Donde la persona cree expresar ternura, el procesador lee coordenadas cartesianas y engendra una naturaleza artificial que cobra autonomía.
+  </p>
+  <div class="hero-actions">
+    <a href="#arena" class="btn-nav">🌿 Entrar al Ecosistema</a>
+    <a href="#curatorial" class="btn-nav">📜 Comunicado Curatorial</a>
+    <a href="#backstage" class="btn-nav">⚙️ Inspeccionar Matriz y Datos</a>
+  </div>
+</section>
+
+<!-- 2. COMUNICADO CURATORIAL -->
+<section class="curatorial-section" id="curatorial">
+  <div class="curatorial-card">
+    <div class="curatorial-tag">MANIFIESTO CONCEPTUAL · PROTOCOLO UEXKÜLL / SHELLEY</div>
+    <h2>El Abismo de la Traducción Sensible</h2>
+    <div class="curatorial-body">
+      <p class="lead-p">
+        <b>Jakob von Uexküll</b> propuso el concepto de <em>Umwelt</em>: cada especie habita un mundo perceptual propio. Una abeja no ve, siente ni se orienta como nosotros.
+      </p>
+      <p>
+        Aquí, el teléfono funciona como una prótesis de vuelo. El usuario intenta fecundar y hacer florecer un campo, pero desconoce las reglas del mundo que intenta habitar.
+      </p>
+      <p>
+        El gesto atraviesa entonces otra traducción: el afecto se convierte en coordenadas, la delicadeza en presión y el movimiento en datos. La máquina no comprende la intención de cuidar; solo procesa señales.
+      </p>
+      <p>
+        Tal como en la advertencia de <b>Mary Shelley en Frankenstein</b>, el anhelo humano por infundir vida a través del artificio técnico engendra una distancia trágica. Al intentar forzar la floración mediante impulsos eléctricos y algoritmos, la criatura escapa a la mano que la nutrió: el ecosistema deviene un organismo maquínico autónomo, donde nuestra presencia termina sobrando.
+      </p>
+
+      <blockquote class="curatorial-question">
+        “¿Qué ocurre cuando intentamos crear o proteger una forma de vida cuya percepción no podemos experimentar?”
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- 3. EL ESPACIO INMERSIVO 3D -->
+<section class="interactive-arena" id="arena">
+  
+  <div id="stageWrap">
+    <!-- Superposición Street View (Pétalos macro gigantes en esquinas) -->
+    <div class="macro-petals" id="macroPetals"></div>
+
+    <!-- POPUP FLOTANTE: CLÍMAX IRREVERSIBLE (No tapa el prado, permite ver la metamorfosis de colores) -->
+    <div id="climaxModal">
+      <div class="climax-banner">
+        <div class="climax-tag">ALERTA ECOLÓGICA · FASE AUTÓNOMA</div>
+        <h3>METAMORFOSIS <span>IRREVERSIBLE</span></h3>
+        <p>
+          El campo ha alcanzado la fecundación crítica.<br>
+          La vida sintética se ha independizado de la caricia humana: el ecosistema muta por sí mismo en un ciclo psicodélico que escapa a nuestro control.
+        </p>
+        <div class="climax-actions">
+          <button id="modalResetBtn" class="primary">Reiniciar Ciclo (Volver a Marchitar)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MUNDO 3D: PLANO DE FLORES INFINITO -->
+    <div id="flightWorld">
+      <div id="groundPlane">
+        <canvas id="meadowBase" width="2048" height="2048"></canvas>
+        <canvas id="meadowLife" width="2048" height="2048"></canvas>
+      </div>
+    </div>
+
+    <!-- CAPAS 2D EN PRIMER PLANO (Nunca recortadas por el plano 3D) -->
+    <canvas id="particlesCanvas"></canvas>
+    <canvas id="hudCanvas"></canvas>
+
+    <!-- SELECTOR DE PERSPECTIVA RÁPIDA (STREET VIEW / FPV / SATÉLITE) -->
+    <div class="view-switcher" id="viewSwitcher">
+      <button class="view-btn" data-view="satellite" title="Vista Satelital Panorámica">🔭 Satélite</button>
+      <button class="view-btn active" data-view="fpv" title="Vuelo FPV de Abeja">🐝 Vista Abeja</button>
+      <button class="view-btn" data-view="macro" title="Macro Inmersión Street View (Entre las Flores)">🔍 Macro Street View</button>
+    </div>
+
+    <button id="fsBtn" type="button" aria-label="Pantalla completa" title="Pantalla completa (F)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+      </svg>
+    </button>
+    
+    <!-- AVISO DE CONEXIÓN (Se oculta automáticamente al mover ratón o conectar teléfono) -->
+    <div id="waiting" role="status" hidden>
+      <b>Esperando conexión con teléfonos polinizadores…</b>
+      <span>Escanea el QR en el panel inferior con uno o varios teléfonos, o explora directamente con el ratón.</span>
+    </div>
+
+    <div id="desktopHelper">
+      <b>Controles laptop:</b> Mueve = Mirar · Arrastra = Fecundar · Rueda = Zoom Inmersivo · Clic Der = Necrosis (Alarma) · Tecla 3 = Robot
+    </div>
+  </div>
+
+  <!-- Barra de Descubrimiento Orgánico -->
+  <div class="discovery-bar">
+    <div class="stat-pill">Polinizadores activos: <span id="statPeers" class="highlight">1</span></div>
+    <div class="stat-pill">Floración del campo: <span id="statCoverage" class="highlight">0%</span></div>
+    <div class="stat-pill">Desfase de polen: <span id="statDrift" style="color:var(--warn)">+0 px</span></div>
+    <div class="stat-pill">Perspectiva: <span id="statChroma">Vuelo FPV Natural</span></div>
+    <div class="stat-pill">Colmena: <span id="statTension" style="color:var(--ok)">Armonía</span></div>
+    <div class="stat-pill">
+      <button id="resetFieldBtn" style="font-size:11px; padding:3px 10px;">Marchitar prado</button>
+      <label style="margin-left:8px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+        <input type="checkbox" id="mouseDev" checked> Ratón activo
+      </label>
+    </div>
+  </div>
+
+</section>
+
+<!-- 4. LA TRASTIENDA MAQUÍNICA -->
+<section class="backstage-section" id="backstage">
+  
+  <!-- CAJÓN 1: Conexión Colectiva (QR) -->
+  <details class="drawer" open>
+    <summary>1. Conectar Teléfonos (QR Colaborativo Multiusuario)</summary>
+    <div class="drawer-content">
+      <div id="joinBox">
+        <img id="qr" alt="Código QR para teléfonos" hidden>
+        <div>
+          <div style="font-size:13px; color:var(--fg); margin-bottom:4px;">
+            Escanea este QR con <b>uno o varios teléfonos</b> para unirse a la misma colmena:
+          </div>
+          <code id="phoneUrl">…</code>
+          <div style="font-size:12px; color:var(--mut); margin-top:8px; line-height:1.5;">
+            Sala MQTT activa: <b id="lblSala" style="color:var(--neo)">…</b> · 
+            <button id="salaNueva" style="font-size:11px; padding:2px 8px; margin-left:6px;">Generar Nueva Sala Privada</button>
+            <br>Varios participantes pueden escanear el mismo código y sumar sus tornados de polen en vivo.
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- CAJÓN 2: Ecosistema Acústico (8 Capas de Audio) -->
+  <details class="drawer" open>
+    <summary>2. Ecosistema Acústico (8 Capas de audio_bee · Clic para probar)</summary>
+    <div class="drawer-content">
+      <div style="font-size:12px; color:var(--mut); margin-bottom:10px;">
+        Haz clic en cualquier capa para probar su timbre y comprobar cómo reacciona ante tus gestos:
+      </div>
+      <div class="badge-list" id="soundBadges">
+        <button class="sound-badge" id="b-bosque" data-snd="bosque">🌲 bosque.flac (ambiente basal constante)</button>
+        <button class="sound-badge" id="b-abeja" data-snd="abeja">🐝 abeja.wav (vuelo fluido armónico)</button>
+        <button class="sound-badge" id="b-mala_abeja" data-snd="mala_abeja">⚡ mala_abeja.mp3 (zumbido irritado / rigidez)</button>
+        <button class="sound-badge" id="b-palpito" data-snd="palpito">💓 palpito.wav (latido celular de contacto)</button>
+        <button class="sound-badge" id="b-maquina" data-snd="maquina">⚙️ maquina.mp3 (pulso mecánico / colmena artificial)</button>
+        <button class="sound-badge" id="b-robot" data-snd="robot">🤖 robot.mp3 (falla traducción / 3 dedos o tecla 3)</button>
+        <button class="sound-badge" id="b-alarma" data-snd="alarma">🚨 alarma.wav (asfixia / presión o clic derecho)</button>
+        <button class="sound-badge" id="b-pago" data-snd="pago">🪙 pago.mp3 (quiebre / levantar contacto)</button>
+      </div>
+      <canvas id="scope" width="800" height="46" aria-label="Osciloscopio"></canvas>
+    </div>
+  </details>
+
+  <!-- CAJÓN 3: Matriz de Conexiones (Para Evaluación) -->
+  <details class="drawer">
+    <summary>3. Matriz de Traducción · Gesto Humano → Variable Numérica</summary>
+    <div class="drawer-content">
+      <div class="tools">
+        <button id="addRow" class="primary">＋ Nueva conexión</button>
+        <button id="expBtn">Exportar JSON</button>
+        <button id="impBtn">Importar JSON</button>
+        <button id="starter">Restablecer Matriz</button>
+        <input type="file" id="impFile" accept="application/json" hidden>
+      </div>
+      <div id="rows" aria-live="polite"></div>
+    </div>
+  </details>
+
+</section>
+
+<footer>
+  UMWELT · El Jardín de Frankenstein — Taller de Diseño y Programación de Proyectos Interactivos (PPI)
+</footer>
+
+<script src="config.js"></script>
+<script src="tacto.js"></script>
+<script src="exp.js"></script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+/* Tacto · UMWELT: El Jardín de Frankenstein
+ * Estilos Editoriales / Curatoriales: Atmosférico, Inmersivo y Orgánico.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #030604;
+  --bg-2: #080f0a;          /* campos */
+  --card: #0d1610;
+  --card-2: #132018;        /* hover / activo */
+  --line: #1a2a1f;
+  --line-2: #243d2c;
+  --fg: #e6f2e8;
+  --mut: #738f7a;           /* texto secundario */
+  --vio: #9333ea;           /* ultravioleta */
+  --vio-2: #c084fc;
+  --neo: #e6ff3d;           /* polen amarillo flúor */
+  --neo-ink: #101400;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --err: #f43f5e;           /* necrosis / alarma */
+
+  --r-s: 8px; --r-m: 14px; --r-l: 22px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 14px; --sp-4: 20px; --sp-5: 32px; --sp-6: 48px;
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--neo);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: "Georgia", "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ease: 240ms cubic-bezier(.16, 1, .3, 1);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { 
+  margin: 0; min-height: 100%; 
+  background: radial-gradient(circle at 50% 15%, #08120b 0%, #030604 75%); 
+  color: var(--fg); font: 14px/1.65 var(--font); 
+  -webkit-font-smoothing: antialiased; 
+}
+[hidden] { display: none !important; }
+
+/* 1. NAVEGACIÓN SUPERIOR FLOTANTE */
+nav.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; position: sticky; top: 0; z-index: 50;
+  background: rgba(3, 6, 4, 0.85); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+nav.top-bar b { letter-spacing: 0.12em; font-size: 15px; font-weight: 700; }
+nav.top-bar b span { color: var(--neo); text-shadow: 0 0 14px rgba(230,255,61,0.4); }
+.nav-links { display: flex; align-items: center; gap: 16px; font-size: 12px; }
+.nav-links a { color: var(--mut); text-decoration: none; transition: color var(--ease); }
+.nav-links a:hover { color: var(--fg); }
+
+/* 2. SECCIÓN 1: CARÁTULA POÉTICA */
+section.hero-cover {
+  min-height: 78vh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+  padding: var(--sp-6) var(--sp-4);
+  background: radial-gradient(ellipse at 50% 40%, rgba(13,26,17,0.7) 0%, rgba(3,6,4,0) 70%);
+}
+.hero-tag { font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--neo); margin-bottom: 14px; font-family: var(--mono); }
+.hero-title { 
+  font-family: var(--serif); font-size: clamp(34px, 5.2vw, 62px); 
+  font-weight: 400; line-height: 1.18; margin: 0 0 18px; 
+  letter-spacing: -0.01em; color: #f2faf3;
+}
+.hero-title em { font-style: italic; color: var(--neo); text-shadow: 0 0 20px rgba(230,255,61,0.25); }
+.hero-sub { 
+  max-width: 660px; font-size: 16px; line-height: 1.65; 
+  color: var(--mut); margin: 0 0 34px; 
+}
+
+/* 3 Botones Interactivos con igual presencia y hover reactivo */
+.hero-actions { 
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center; 
+}
+.btn-nav { 
+  background: var(--card); color: var(--fg); border: 1px solid var(--line-2);
+  font-weight: 600; font-size: 13px; padding: 12px 24px; border-radius: 999px;
+  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+  transition: transform 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+}
+.btn-nav:hover { 
+  transform: translateY(-3px) scale(1.04); 
+  border-color: var(--neo); 
+  background: var(--neo); 
+  color: var(--neo-ink);
+  box-shadow: 0 0 30px rgba(230,255,61,0.5); 
+}
+.hero-actions:hover .btn-nav:not(:hover) {
+  opacity: 0.65;
+  transform: scale(0.97);
+}
+
+/* 3. SECCIÓN 2: COMUNICADO CURATORIAL */
+section.curatorial-section {
+  max-width: 860px; margin: 0 auto var(--sp-6); padding: 0 var(--sp-4);
+}
+.curatorial-card {
+  background: rgba(13,22,16,0.72); border: 1px solid var(--line);
+  border-radius: var(--r-l); padding: var(--sp-5);
+  backdrop-filter: blur(14px); box-shadow: 0 16px 45px rgba(0,0,0,0.6);
+}
+.curatorial-tag {
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--neo); font-family: var(--mono); margin-bottom: 12px;
+}
+.curatorial-card h2 { 
+  font-family: var(--serif); font-size: 26px; font-weight: 400;
+  color: #fff; margin: 0 0 20px; letter-spacing: 0.02em;
+}
+.curatorial-body { font-size: 15px; line-height: 1.85; color: #d4e5d7; }
+.curatorial-body p { margin: 0 0 16px; }
+.curatorial-body p.lead-p { font-size: 16px; color: #effaf1; }
+.curatorial-body b { color: #fff; font-weight: 600; }
+.curatorial-question {
+  margin: 26px 0 0; padding: 20px 24px; border-radius: var(--r-m);
+  background: rgba(4, 9, 6, 0.75); border-left: 3px solid var(--neo);
+  font-family: var(--serif); font-size: 18px; font-style: italic; color: #f5fdf7;
+  line-height: 1.6;
+}
+
+/* 4. SECCIÓN 3: EL ESPACIO INMERSIVO */
+section.interactive-arena {
+  max-width: 1420px; margin: 0 auto var(--sp-6); width: 100%;
+  padding: 0 var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3);
+}
+
+#stageWrap { 
+  position: relative; width: 100%; aspect-ratio: 16/9; min-height: 560px;
+  background: radial-gradient(circle at 50% 25%, #08170e, #020503 94%); 
+  border-radius: var(--r-l); overflow: hidden; border: 1px solid var(--line-2); 
+  perspective: 900px; perspective-origin: 50% 40%; touch-action: none; 
+  box-shadow: 0 24px 60px rgba(0,0,0,0.85), 0 0 45px rgba(74,222,128,0.08);
+}
+
+#flightWorld { 
+  position: absolute; inset: 0; width: 100%; height: 100%; 
+  transform-style: preserve-3d; will-change: transform; pointer-events: none; 
+}
+
+/* Plano de flores con escala gigante y máscara orgánica: sin límites rectangulares */
+#groundPlane { 
+  position: absolute; left: -100%; top: -100%; width: 300%; height: 300%; 
+  transform-origin: 50% 50%; transform: rotateX(20deg) translateZ(-10px); 
+  transform-style: preserve-3d; will-change: transform; 
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 72%, transparent 97%);
+  mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 72%, transparent 97%);
+}
+
+#meadowBase, #meadowLife { 
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; 
+}
+
+#meadowBase { 
+  filter: grayscale(88%) contrast(92%) brightness(32%) sepia(25%); opacity: 0.95; 
+}
+
+#meadowLife { 
+  opacity: 0.98; will-change: filter, transform; mix-blend-mode: screen; 
+}
+
+/* Lienzos 2D fuera del mundo 3D: CERO cortes por Z-buffer */
+#particlesCanvas, #hudCanvas { 
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;
+}
+
+/* SELECTOR DE PERSPECTIVA RÁPIDA (STREET VIEW) */
+.view-switcher {
+  position: absolute; top: 14px; left: 16px; z-index: 5;
+  display: flex; gap: 4px; background: rgba(5, 10, 7, 0.82);
+  padding: 4px; border-radius: 999px; border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+.view-btn {
+  background: transparent; border: none; color: var(--mut);
+  font-size: 11px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
+  cursor: pointer; transition: all 180ms ease; font-family: var(--font);
+}
+.view-btn:hover { color: var(--fg); background: var(--card-2); }
+.view-btn.active {
+  background: var(--neo); color: var(--neo-ink); font-weight: 700;
+  box-shadow: 0 0 12px rgba(230,255,61,0.3);
+}
+
+.macro-petals {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  opacity: 0; transition: opacity 450ms ease;
+  background: 
+    radial-gradient(circle at -5% 105%, rgba(147, 51, 234, 0.5) 0%, transparent 40%),
+    radial-gradient(circle at 105% -5%, rgba(230, 255, 61, 0.35) 0%, transparent 42%),
+    radial-gradient(circle at 95% 95%, rgba(74, 222, 128, 0.3) 0%, transparent 35%);
+  filter: blur(1.5px);
+}
+.macro-active .macro-petals { opacity: 1; }
+
+#fsBtn { 
+  position: absolute; top: 14px; right: 14px; z-index: 5; 
+  width: 38px; height: 38px; min-height: 0; padding: 0; 
+  display: grid; place-items: center; background: rgba(8,16,11,.75); 
+  border-color: var(--line-2); backdrop-filter: blur(8px); border-radius: var(--r-s);
+}
+
+#desktopHelper {
+  position: absolute; left: 16px; bottom: 14px; z-index: 5;
+  background: rgba(4,8,5,0.85); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 18px; font-size: 11px;
+  font-family: var(--mono); color: var(--mut); backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+#desktopHelper b { color: var(--neo); font-weight: 600; }
+
+#waiting { 
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 10px; 
+  text-align: center; padding: 24px; background: rgba(3,6,4,.82); 
+  backdrop-filter: blur(8px); pointer-events: none; z-index: 4; 
+  transition: opacity 300ms ease;
+}
+#waiting[hidden] { display: none !important; }
+#waiting b { font-size: 18px; color: var(--fg); letter-spacing: 0.05em; } 
+#waiting span { color: var(--mut); font-size: 13px; max-width: 480px; line-height: 1.5; }
+
+/* POPUP FLOTANTE DE CLÍMAX (No bloquea la vista del prado mutando de color) */
+#climaxModal {
+  position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  z-index: 20; display: none; pointer-events: auto;
+  opacity: 0; transition: opacity 400ms ease, transform 400ms ease;
+  max-width: 600px; width: calc(100% - 32px);
+}
+#climaxModal.active { 
+  display: block; opacity: 1; transform: translateX(-50%) translateY(0); 
+}
+.climax-banner {
+  background: rgba(8, 16, 11, 0.92); border: 1px solid var(--neo);
+  border-radius: var(--r-l); padding: 22px 28px; backdrop-filter: blur(16px);
+  box-shadow: 0 0 50px rgba(230,255,61,0.35), 0 20px 45px rgba(0,0,0,0.85);
+  text-align: center; animation: pulse-border 3s ease-in-out infinite;
+}
+.climax-tag {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em;
+  color: var(--warn); margin-bottom: 6px; text-transform: uppercase;
+}
+.climax-banner h3 {
+  font-family: var(--serif); font-size: 22px; color: #fff; margin: 0 0 8px;
+  letter-spacing: 0.05em; font-weight: 400;
+}
+.climax-banner h3 span { color: var(--neo); font-style: italic; }
+.climax-banner p {
+  color: #cce3d1; font-size: 13px; line-height: 1.6; margin: 0 0 16px;
+}
+.climax-actions { display: flex; justify-content: center; }
+@keyframes pulse-border {
+  50% { box-shadow: 0 0 65px rgba(230,255,61,0.5), 0 20px 45px rgba(0,0,0,0.85); }
+}
+
+/* Barra de Descubrimiento Orgánico */
+.discovery-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-m); padding: 12px 20px; flex-wrap: wrap; gap: 12px;
+}
+.stat-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mut); }
+.stat-pill span { color: var(--fg); font-weight: 600; font-family: var(--mono); }
+.stat-pill span.highlight { color: var(--neo); }
+
+/* 5. SECCIÓN 4: LA TRASTIENDA MAQUÍNICA */
+section.backstage-section {
+  max-width: 1420px; margin: 0 auto var(--sp-6); width: 100%;
+  padding: 0 var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3);
+}
+
+details.drawer {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-m); overflow: hidden; transition: border-color var(--ease);
+}
+details.drawer[open] { border-color: var(--line-2); }
+details.drawer > summary {
+  padding: 14px 20px; cursor: pointer; font-size: 13px;
+  font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--mut); list-style: none; display: flex;
+  justify-content: space-between; align-items: center; user-select: none;
+}
+details.drawer > summary::-webkit-details-marker { display: none; }
+details.drawer > summary:hover { color: var(--fg); background: var(--card-2); }
+details.drawer > summary::after { content: "＋ Desplegar"; font-size: 11px; color: var(--mut); font-weight: 400; }
+details.drawer[open] > summary::after { content: "— Ocultar"; }
+.drawer-content { padding: var(--sp-4); border-top: 1px solid var(--line); display: grid; gap: var(--sp-4); }
+
+.sound-badge { 
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; 
+  border-radius: 999px; font-size: 11px; font-family: var(--mono); 
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--mut); 
+  cursor: pointer; transition: all 180ms ease;
+}
+.sound-badge:hover { 
+  border-color: var(--neo); color: var(--fg); background: var(--card-2);
+  transform: translateY(-1px);
+}
+.sound-badge.active { 
+  border-color: var(--neo); color: var(--neo-ink); background: var(--neo); 
+  font-weight: 700; box-shadow: 0 0 16px rgba(230,255,61,0.4); 
+}
+.badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+#joinBox { display: flex; gap: var(--sp-4); align-items: center; flex-wrap: wrap; }
+#qr { width: 120px; height: 120px; background: #fff; border-radius: var(--r-s); padding: 6px; flex: none; }
+#joinBox code { display: block; margin-top: 6px; color: var(--neo); word-break: break-all; font: 12px var(--mono); user-select: all; }
+#scope { width: 100%; height: 46px; background: var(--bg-2); border-radius: var(--r-s); display: block; border: 1px solid var(--line); }
+
+/* Matriz de Conexiones */
+.tools { display: flex; gap: 6px; margin-bottom: var(--sp-3); flex-wrap: wrap; }
+.row { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-m); padding: 10px; margin-bottom: 8px; }
+.row .r1, .row .r2, .row .r3 { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; font-size: 12px; }
+.row .r1 select { flex: 1; min-width: 0; max-width: 220px; }
+.row .r2 span, .row .r3 span, .row .r3 label { color: var(--mut); }
+.row .r3 .smooth { flex: 1; min-width: 60px; }
+.meter { position: relative; height: 16px; background: var(--bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.meter i { position: absolute; left: 0; top: 0; height: 50%; background: var(--vio); width: 0; } 
+.meter i.o { top: 50%; background: var(--neo); }
+.meter .val { position: absolute; right: 6px; top: 0; font: 10px/16px var(--mono); color: #fff; mix-blend-mode: difference; }
+
+footer { text-align: center; padding: var(--sp-5) var(--sp-4); color: var(--mut); font-size: 12px; border-top: 1px solid var(--line); }
+
+@keyframes pulse { 50% { opacity: .3; } }
+@keyframes pulse-glow { 50% { box-shadow: 0 0 0 5px rgba(230,255,61,.2); } }
+#audioBtn.primary { animation: pulse-glow 2s ease-in-out infinite; }
