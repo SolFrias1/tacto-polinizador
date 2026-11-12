@@ -139,14 +139,14 @@ section.interactive-arena {
   transform-style: preserve-3d; will-change: transform; pointer-events: none; 
 }
 
-/* Plano de flores centrado con escala amplia y máscara orgánica: sin límites rectangulares */
+/* Plano de flores infinito con escala panorámica 3200px: CERO bordes rectangulares o cortes en esquinas */
 #groundPlane { 
-  position: absolute; left: 50%; top: 50%; width: 2048px; height: 2048px; 
-  margin-left: -1024px; margin-top: -1024px;
+  position: absolute; left: 50%; top: 50%; width: 3200px; height: 3200px; 
+  margin-left: -1600px; margin-top: -1600px;
   transform-origin: 50% 50%; transform: rotateX(20deg) translateZ(-10px); 
   transform-style: preserve-3d; will-change: transform; 
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 75%, transparent 98%);
-  mask-image: radial-gradient(ellipse at 50% 50%, black 50%, rgba(0,0,0,0.85) 75%, transparent 98%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%);
+  mask-image: radial-gradient(ellipse at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%);
 }
 
 #meadowBase, #meadowLife { 
@@ -154,11 +154,13 @@ section.interactive-arena {
 }
 
 #meadowBase { 
-  filter: grayscale(88%) contrast(92%) brightness(32%) sepia(25%); opacity: 0.95; 
+  /* Coloración natural botánica: flores nítidas, vivas y luminosas sin tono lúgubre */
+  filter: brightness(92%) contrast(106%) saturate(120%); 
+  opacity: 1; 
 }
 
 #meadowLife { 
-  opacity: 0.98; will-change: filter, transform; mix-blend-mode: screen; 
+  opacity: 1; will-change: filter, transform; 
 }
 
 /* Lienzos 2D fuera del mundo 3D: CERO cortes por Z-buffer */

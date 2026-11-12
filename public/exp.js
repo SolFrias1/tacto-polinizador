@@ -203,12 +203,18 @@ floriImg.onload = () => {
 };
 
 function renderInfiniteMeadowBase() {
-  // Mosaico botánico continuo para una visualización natural
+  // Mosaico botánico continuo y luminoso para una visualización natural y viva
   const pat = bgx.createPattern(floriImg, 'repeat');
   bgx.fillStyle = pat;
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
-  // Velo suave de descanso botánico para que el prado sea visible sin ser negro
-  bgx.fillStyle = 'rgba(10, 18, 12, 0.32)';
+
+  // Viñeta periférica atmosférica suave: mantiene el prado central hermoso, vivo y nítido
+  const cx = baseCv.width / 2, cy = baseCv.height / 2;
+  const grad = bgx.createRadialGradient(cx, cy, baseCv.width * 0.28, cx, cy, baseCv.width * 0.62);
+  grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  grad.addColorStop(0.75, 'rgba(3, 8, 5, 0.16)');
+  grad.addColorStop(1, 'rgba(3, 8, 5, 0.52)');
+  bgx.fillStyle = grad;
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
 }
 
@@ -484,8 +490,10 @@ function update3DWorld(now) {
       if (pol.isDown && pol.id !== 'raton') {
         const sx = pol.tx * partCv.width;
         const sy = pol.ty * partCv.height;
-        const wx = 1024 + (sx - partCv.width / 2) / P.zoom;
-        const wy = 1024 + (sy - partCv.height / 2) / P.zoom;
+        const cx = lifeCv.width / 2;
+        const cy = lifeCv.height / 2;
+        const wx = cx + (sx - partCv.width / 2) / P.zoom;
+        const wy = cy + (sy - partCv.height / 2) / P.zoom;
         swarmDepositPollen(wx, wy, pol.td > 78, 1.35);
       }
     }
@@ -527,8 +535,10 @@ function update3DWorld(now) {
       // Depositar polen si el polinizador está presionando y la abeja pasa cerca
       if (targetIsDown && dist < 125 && Math.random() > 0.25 && !isClimax) {
         const isNecrotic = P.necrosis > 0.6 || isRightClick;
-        const wx = 1024 + (b.x - partCv.width / 2) / P.zoom;
-        const wy = 1024 + (b.y - partCv.height / 2) / P.zoom;
+        const cx = lifeCv.width / 2;
+        const cy = lifeCv.height / 2;
+        const wx = cx + (b.x - partCv.width / 2) / P.zoom;
+        const wy = cy + (b.y - partCv.height / 2) / P.zoom;
         swarmDepositPollen(wx, wy, isNecrotic, 0.85);
         b.charge = 1;
       }
