@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Tacto · control remoto</title>
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="ui.css?v=20261112_1205">
 <style>
   * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
   html, body { font-size: 16px; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
@@ -44,6 +44,7 @@
     <input id="name" autocomplete="off" autocapitalize="off" maxlength="24" placeholder="ej: Abeja"></div>
     <div class="field"><label for="sala">Código de sala sincronizada</label>
     <input id="sala" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="24" placeholder="ej: k7m2xq"></div>
+    <div id="joinStatus" style="display:none; font-size:13px; font-weight:600; color:#86efac; text-align:center; padding:10px 14px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); border-radius:var(--r-s); margin-top:4px;"></div>
     <button id="go" class="primary" style="background: linear-gradient(135deg, #a3e635, #65a30d); color: #051004; font-size: 17px; font-weight: 700; padding: 15px; border: none; box-shadow: 0 6px 20px rgba(163,230,53,0.35); cursor: pointer; margin-top: 6px;">
       🚀 ENTRAR AL VUELO
     </button>
@@ -64,8 +65,8 @@
     <div class="msg" id="err2" role="alert"></div>
   </div>
 
-<script src="config.js"></script>
-<script src="tacto.js"></script>
+<script src="config.js?v=20261112_1205"></script>
+<script src="tacto.js?v=20261112_1205"></script>
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
@@ -81,31 +82,62 @@ let client = null, base = '', name = '', sala = '';
 const dev = ls('tacto.dev') || (ls('tacto.dev', Tacto.rand(6)), ls('tacto.dev'));
 const pub = (kind, obj, qos = 0, retain = false) => client && client.connected && client.publish(`${base}/${kind}`, JSON.stringify(obj), { qos, retain });
 
+// Actualización reactiva del nombre al escribir
+$('#name').addEventListener('input', () => {
+  name = $('#name').value.trim() || 'Abeja';
+  ls('tacto.name', name);
+  if (client && client.connected) publishStatus();
+  if ($('#joinStatus') && sala) {
+    $('#joinStatus').innerHTML = `🟢 <b>Conectado</b> a la sala <b>${sala}</b><br><span style="font-size:11px; opacity:0.85;">Apareces en pantalla como "${name}"</span>`;
+  }
+});
+
 // ---------- capacidades detectadas (presión y diámetro dependen del teléfono) ----------
 const S = { f: { min: 9, max: -1, n: 0 }, d: { min: 1e9, max: -1, n: 0 } };
 const quality = (s, eps) => (!s.n ? 'sin datos aún' : s.max <= 0 ? 'sin dato' : s.n > 20 && s.max - s.min < eps ? 'constante' : 'variable');
 const caps = () => ({ presion: quality(S.f, 0.02), diametro: quality(S.d, 1), tacto: 'ontouchstart' in window ? 'touch' : 'puntero' });
 let lastCaps = '';
-function publishStatus() { pub('status', { online: true, name, caps: { ...caps(), motion: motionOn } }, 1, true); }
+function publishStatus() {
+  name = $('#name').value.trim() || 'Abeja';
+  pub('status', { online: true, name, caps: { ...caps(), motion: motionOn } }, 1, true);
+}
 
-// ---------- conexión MQTT ----------
+// ---------- conexión MQTT (idempotente y con auto-conexión) ----------
+let connectingPromise = null;
 async function connect() {
-  base = `tacto/${sala}/${dev}`;
-  const will = { topic: `${base}/status`, payload: JSON.stringify({ online: false, name }), qos: 1, retain: true };
-  const o = await Tacto.open({ clientId: 'tel-' + dev, will });
-  client = o.client;
-  const where = /^wss?:\/\/(localhost|\d+\.\d+\.\d+\.\d+)/.test(o.broker) ? 'broker local' : 'broker público';
-  $('#info').textContent = `sala ${sala} · ${where}`;
-  client.on('connect', () => {
-    $('#st').textContent = '● conectado'; $('#st').className = 'on';
-    client.subscribe(`${base}/cmd`); publishStatus();
-  });
-  client.on('reconnect', () => { $('#st').textContent = 'Reconectando…'; $('#st').className = 'warn'; });
-  client.on('offline', () => { $('#st').textContent = 'Sin conexión'; $('#st').className = 'warn'; });
-  client.on('error', e => { $('#err2').textContent = 'MQTT: ' + (e.message || e); });
-  client.on('message', (t, p) => { // la experiencia mide la latencia: respondemos al instante
-    try { const m = JSON.parse(p.toString()); if (m.ping != null) pub('pong', { t: m.ping }); } catch {}
-  });
+  if (client && client.connected) return;
+  if (connectingPromise) return connectingPromise;
+  connectingPromise = (async () => {
+    name = $('#name').value.trim() || 'Abeja';
+    sala = Tacto.clean($('#sala').value) || Tacto.clean(Q.get('sala')) || Tacto.clean(ls('tacto.sala')) || '';
+    if (sala.length < 4) return;
+    base = `tacto/${sala}/${dev}`;
+    const will = { topic: `${base}/status`, payload: JSON.stringify({ online: false, name }), qos: 1, retain: true };
+    const o = await Tacto.open({ clientId: 'tel-' + dev, will });
+    client = o.client;
+    const where = /^wss?:\/\/(localhost|\d+\.\d+\.\d+\.\d+)/.test(o.broker) ? 'broker local' : 'broker público';
+    $('#info').textContent = `sala ${sala} · ${where}`;
+    client.on('connect', () => {
+      $('#st').textContent = '● conectado'; $('#st').className = 'on';
+      if ($('#joinStatus')) {
+        $('#joinStatus').innerHTML = `🟢 <b>Conectado</b> a la sala <b>${sala}</b><br><span style="font-size:11px; opacity:0.85;">Apareces en pantalla como "<b>${name}</b>"</span>`;
+        $('#joinStatus').style.display = 'block';
+      }
+      client.subscribe(`${base}/cmd`);
+      publishStatus();
+    });
+    client.on('reconnect', () => { $('#st').textContent = 'Reconectando…'; $('#st').className = 'warn'; });
+    client.on('offline', () => { $('#st').textContent = 'Sin conexión'; $('#st').className = 'warn'; });
+    client.on('error', e => {
+      console.error('MQTT error:', e);
+      if ($('#err')) $('#err').textContent = 'Error MQTT: ' + (e.message || e);
+      if ($('#err2')) $('#err2').textContent = 'MQTT: ' + (e.message || e);
+    });
+    client.on('message', (t, p) => {
+      try { const m = JSON.parse(p.toString()); if (m.ping != null) pub('pong', { t: m.ping }); } catch {}
+    });
+  })();
+  return connectingPromise;
 }
 
 // ---------- tacto ----------
@@ -262,22 +294,51 @@ function bindMotion() {
   }, 33);
 }
 
-const setOn = (id, on) => { $(id).classList.toggle('active', on); $(id).setAttribute('aria-pressed', on); };
-const fail = e => { $('#err2').textContent = e.message || String(e); };
+const setOn = (id, on) => { const el = $(id); if (el) { el.classList.toggle('active', on); el.setAttribute('aria-pressed', on); } };
+const fail = e => { if ($('#err2')) $('#err2').textContent = e.message || String(e); };
 
-// ---------- entrar ----------
+// ---------- entrar al vuelo ----------
 async function wake() { try { await navigator.wakeLock?.request('screen'); } catch {} }
 $('#go').onclick = async () => {
-  name = $('#name').value.trim() || 'tel'; sala = Tacto.clean($('#sala').value);
+  name = $('#name').value.trim() || 'Abeja';
+  sala = Tacto.clean($('#sala').value);
   if (sala.length < 4) { $('#err').textContent = 'Escribe la sala que muestra la experiencia (mínimo 4 caracteres).'; return; }
   if (!window.isSecureContext) { $('#err').textContent = 'Los sensores de movimiento necesitan HTTPS. El tacto funcionará igual.'; }
   ls('tacto.name', name); ls('tacto.sala', sala);
-  try { await askMotion(); bindMotion(); motionOn = true; setOn('#m-motion', true); }
-  catch (e) { $('#err').textContent = e.message + ' Puedes continuar solo con el tacto.'; }
-  $('#join').style.display = 'none'; $('#run').style.display = 'flex'; fit(); draw(); wake();
+  try {
+    await askMotion();
+    bindMotion();
+    motionOn = true;
+    if ($('#v-motion')) $('#v-motion').textContent = 'Sensores Activos';
+  } catch (e) {
+    console.warn('Motion error:', e);
+    if ($('#err')) $('#err').textContent = e.message + ' Puedes continuar con el tacto.';
+  }
+  $('#join').style.display = 'none';
+  $('#run').style.display = 'flex';
+  fit();
+  draw();
+  wake();
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && wake());
-  connect().catch(e => { $('#st').textContent = 'No se pudo conectar'; fail(e); });
+  try {
+    await connect();
+    publishStatus();
+  } catch (e) {
+    if ($('#st')) $('#st').textContent = 'No se pudo conectar';
+    fail(e);
+  }
 };
+
+// AUTO-CONEXIÓN INMEDIATA SI VIENE DE CÓDIGO QR (?sala=...)
+const initialSala = Tacto.clean(Q.get('sala')) || Tacto.clean($('#sala').value);
+if (initialSala.length >= 4) {
+  sala = initialSala;
+  if ($('#joinStatus')) {
+    $('#joinStatus').style.display = 'block';
+    $('#joinStatus').innerHTML = `⏳ Sincronizando con sala <b>${sala}</b>…`;
+  }
+  connect().catch(e => console.warn('Pre-connect error:', e));
+}
 </script>
 </body>
 </html>

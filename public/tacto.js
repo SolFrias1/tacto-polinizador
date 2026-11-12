@@ -41,7 +41,11 @@
     return PUBLIC_BROKER;
   }
   // usuario y contraseña (brokers en la nube)
-  const auth = broker => (CFG.username ? { username: CFG.username, password: CFG.password || '' } : {});
+  const auth = broker => {
+    const user = Q.get('u') || CFG.username;
+    const pass = Q.get('p') || CFG.password;
+    return user ? { username: user, password: pass || '' } : {};
+  };
   function loadMqtt() {
     if (g.mqtt) return Promise.resolve();
     const add = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });

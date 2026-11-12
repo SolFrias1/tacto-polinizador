@@ -1108,11 +1108,12 @@ async function updateJoin() {
   if (!base) base = new URL('index.html', location.href).href;
   let u = base + (base.includes('?') ? '&' : '?') + 'sala=' + tacto.sala;
   if (!local || Q.get('broker')) u += '&broker=' + encodeURIComponent(tacto.broker || Tacto.PUBLIC_BROKER);
+  if (CFG.username) u += '&u=' + encodeURIComponent(CFG.username);
+  if (CFG.password) u += '&p=' + encodeURIComponent(CFG.password);
 
   // Actualizar textos en panel inferior y en modal pop-up de lobby
   if ($('#phoneUrl')) $('#phoneUrl').textContent = u;
   if ($('#lblSala')) $('#lblSala').textContent = tacto.sala;
-  if ($('#lobbyUrl')) $('#lobbyUrl').textContent = u;
   if ($('#lobbySala')) $('#lobbySala').textContent = tacto.sala;
 
   const lobbyQr = $('#lobbyQr');
