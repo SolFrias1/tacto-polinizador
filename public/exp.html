@@ -69,22 +69,6 @@
 <section class="interactive-arena" id="arena">
   
   <div id="stageWrap">
-    <!-- Superposición Inmersiva Umwelt (Bokeh de pétalos gigantes y refracción floral) -->
-    <div class="macro-petals" id="macroPetals"></div>
-
-    <!-- CAPA DE REVELACIÓN MICRO-UMWELT (Invisible de lejos, emerge al entrar en las flores) -->
-    <div class="umwelt-micro-layer" id="umweltMicro">
-      <div class="uv-nectar-guides"></div>
-      <div class="macro-stamen-core">
-        <div class="stamen s1"></div>
-        <div class="stamen s2"></div>
-        <div class="stamen s3"></div>
-        <div class="stamen s4"></div>
-        <div class="stamen s5"></div>
-      </div>
-      <div class="macro-vignette"></div>
-    </div>
-
     <!-- POPUP FLOTANTE: CLÍMAX IRREVERSIBLE (No tapa el prado, permite ver la metamorfosis de colores) -->
     <div id="climaxModal">
       <div class="climax-banner">
@@ -112,11 +96,11 @@
     <canvas id="particlesCanvas"></canvas>
     <canvas id="hudCanvas"></canvas>
 
-    <!-- SELECTOR DE PERSPECTIVA CONCEPTUAL UMWELT -->
+    <!-- SELECTOR DE PERSPECTIVA -->
     <div class="view-switcher" id="viewSwitcher">
-      <button class="view-btn" data-view="satellite" title="Visión Aérea Panorámica">🔭 Ojo Panorámico</button>
-      <button class="view-btn active" data-view="fpv" title="Vuelo FPV de Enjambre">🐝 Vuelo FPV</button>
-      <button class="view-btn" data-view="macro" title="Inmersión en el Cáliz Floral (Micro-Umwelt)">🌸 Inmersión Umwelt</button>
+      <button class="view-btn" data-view="satellite" title="Vista Panorámica General">🔭 Panorámica</button>
+      <button class="view-btn active" data-view="fpv" title="Vuelo FPV de la Abeja">🐝 Vuelo FPV</button>
+      <button class="view-btn" data-view="uv" title="Espectro Ultravioleta (Percepción de la Abeja)">👁️ Espectro UV</button>
     </div>
 
     <button id="fsBtn" type="button" aria-label="Pantalla completa" title="Pantalla completa (F)">

@@ -354,45 +354,60 @@ function getActivePollinators() {
 
 // ============================ BUCLE 3D Y PERSPECTIVA ==================
 let curCamRoll = 0, curCamPitch = 0;
+let phoneStreaming = false;
+
 function update3DWorld(now) {
   syncCanvasSizes();
 
-  // Suavizado cinemático con inercia aérea sin mareo
-  curCamRoll += (P.camRoll - curCamRoll) * 0.05;
-  curCamPitch += (P.camPitch - curCamPitch) * 0.05;
+  // Control de vuelo continuo desde el giroscopio de cualquier teléfono móvil
+  phoneStreaming = false;
+  for (const dev of Object.values(tacto.devices)) {
+    if (!dev.online) continue;
+    const gy = dev.ch['ang.g'];
+    const gx = dev.ch['ang.b'];
+    if (gy != null && gx != null) {
+      phoneStreaming = true;
+      // Inclinación lateral (alabeo / Roll) en el aire
+      P.camRoll = clamp(gy * 0.95, -45, 45);
+      // Inclinación adelante/atrás (cabeceo / Pitch)
+      P.camPitch = clamp((gx - 35) * 0.85, -35, 35);
+    }
+    // Zoom táctil desde el teléfono con 2 dedos
+    const td = dev.ch['touch.dist'];
+    if (td != null && (dev.ch['touch.n'] || 0) >= 2) {
+      P.zoom = clamp(0.7 + td * 1.6, 0.65, 3.2);
+    }
+  }
 
-  const isMacro = P.zoom > 1.35;
+  // Suavizado cinemático con inercia aérea viva
+  curCamRoll += (P.camRoll - curCamRoll) * 0.075;
+  curCamPitch += (P.camPitch - curCamPitch) * 0.075;
+
+  const isUV = $('#stageWrap').classList.contains('uv-active');
   const isSatellite = P.zoom < 0.9;
-  $('#stageWrap').classList.toggle('macro-active', isMacro);
 
-  if (isMacro) {
-    $('#statChroma').textContent = `Inmersión Umwelt (Dentro del Cáliz · UV ${Math.round(P.colorExotico)}°)`;
+  if (isUV) {
+    $('#statChroma').textContent = 'Espectro UV (Abeja)';
   } else if (isSatellite) {
-    $('#statChroma').textContent = 'Ojo Panorámico';
+    $('#statChroma').textContent = 'Panorámica General';
   } else {
     $('#statChroma').textContent = 'Vuelo FPV de Enjambre';
   }
 
-  // Perspectiva 3D con descenso natural a ras del suelo
-  const rotX = isSatellite ? 12 : (isMacro ? 8 + curCamPitch * 0.08 : 20 + curCamPitch * 0.2);
-  const rotZ = -curCamRoll * 0.2;
-  const transX = -curCamRoll * 2.5;
-  const transY = -curCamPitch * 1.5 + (isMacro ? (P.zoom - 1.35) * 165 : 0);
+  // Perspectiva 3D con alabeo y cabeceo dinámico
+  const rotX = isSatellite ? 14 : 22 + curCamPitch * 0.35;
+  const rotZ = -curCamRoll * 0.35;
+  const transX = -curCamRoll * 3.8;
+  const transY = -curCamPitch * 2.4;
   const scale = P.zoom;
 
   groundPlane.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${transX}px, ${transY}px, 0) scale(${scale})`;
 
-  // Acústica íntima según perspectiva
-  if (A.filt && A.ctx) {
-    const targetHz = isMacro ? 11800 : (isSatellite ? 4600 : P.filtroHz);
-    A.filt.frequency.setTargetAtTime(targetHz, A.ctx.currentTime, 0.1);
-  }
-
   // Ciclo cromático autónomo en fase de clímax irreversible
   if (isClimax) autonomousHue = (autonomousHue + 0.6) % 360;
-  const uvHue = isClimax ? autonomousHue : (P.colorExotico + (isMacro ? (P.zoom - 1.3) * 110 : 0)) % 360;
-  const sat = isSatellite ? 70 : 100 + (isMacro ? (P.zoom - 1.2) * 130 : 0);
-  const bri = isSatellite ? 75 : 100 + (isMacro ? (P.zoom - 1.35) * 25 : 0);
+  const uvHue = isClimax ? autonomousHue : (P.colorExotico) % 360;
+  const sat = isSatellite ? 75 : 100;
+  const bri = isSatellite ? 80 : 100;
   lifeCv.style.filter = `hue-rotate(${uvHue}deg) saturate(${sat}%) brightness(${bri}%)`;
 
   // Renderizar Partículas del Enjambre
@@ -569,7 +584,7 @@ let mouseInside = false;
 
 stage.addEventListener('contextmenu', e => e.preventDefault());
 
-// Selector de vista rápida
+// Selector de vista
 document.querySelectorAll('.view-btn').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
@@ -578,27 +593,26 @@ document.querySelectorAll('.view-btn').forEach(btn => {
     if (view === 'satellite') {
       simulatedZoom = 0.75;
       P.zoom = 0.75;
+      $('#stageWrap').classList.remove('uv-active');
     } else if (view === 'fpv') {
       simulatedZoom = 1.05;
       P.zoom = 1.05;
-    } else if (view === 'macro') {
-      simulatedZoom = 3.4;
-      P.zoom = 3.4;
+      $('#stageWrap').classList.remove('uv-active');
+    } else if (view === 'uv') {
+      $('#stageWrap').classList.toggle('uv-active');
+      P.colorExotico = 230;
     }
   };
 });
 
 stage.addEventListener('wheel', e => {
   e.preventDefault();
-  simulatedZoom = clamp(simulatedZoom - e.deltaY * 0.0022, 0.65, 4.2);
+  simulatedZoom = clamp(simulatedZoom - e.deltaY * 0.0018, 0.65, 3.2);
   P.zoom = simulatedZoom;
   document.querySelectorAll('.view-btn').forEach(b => {
     const v = b.dataset.view;
-    b.classList.toggle('active', 
-      (v === 'satellite' && P.zoom < 0.9) ||
-      (v === 'macro' && P.zoom > 1.35) ||
-      (v === 'fpv' && P.zoom >= 0.9 && P.zoom <= 1.35)
-    );
+    if (v === 'satellite') b.classList.toggle('active', P.zoom < 0.9);
+    if (v === 'fpv') b.classList.toggle('active', P.zoom >= 0.9 && !$('#stageWrap').classList.contains('uv-active'));
   });
 }, { passive: false });
 
@@ -622,9 +636,9 @@ stage.addEventListener('pointermove', e => {
   mouseCoords.x = clamp((e.clientX - r.left) / r.width);
   mouseCoords.y = clamp((e.clientY - r.top) / r.height);
   
-  if (!isClimax) {
-    P.camRoll = nx * 14;
-    P.camPitch = ny * 10;
+  if (!isClimax && !phoneStreaming) {
+    P.camRoll = nx * 44;
+    P.camPitch = ny * 32;
   }
 });
 
