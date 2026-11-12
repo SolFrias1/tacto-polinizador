@@ -44,7 +44,7 @@ Al igual que en la advertencia de **Mary Shelley en *Frankenstein o el moderno P
                              ▼
   ┌────────────────────────────────────────────────────────┐
   │                 BROKER MQTT (Cloud / Local)            │
-  │   b80fb118.ala.us-east-1.emqxsl.com (WSS Puerto 8084)  │
+  │   b21edce6.ala.us-east-1.emqxsl.com (WSS Puerto 8084)  │
   │   Topología de Salas Dinámicas: tacto/<sala>/<dev>/... │
   └──────────────────────────┬─────────────────────────────┘
                              │ WebSocket Seguro
