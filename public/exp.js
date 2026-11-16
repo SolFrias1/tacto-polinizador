@@ -20,8 +20,8 @@ const T = {}, LAST = {}, P = {
 const tgt = (id, g, label, min, max, def, o = {}) => { T[id] = { id, g, label, min, max, def, ...o }; };
 const setT = (id, v) => { LAST[id] = v; if (T[id] && T[id].apply) T[id].apply(v); };
 
-tgt('vuelo.inclinacion.x', 'Vuelo 3D', 'giro de cabeza / alabeo (roll %)', -40, 40, 0, { apply: v => { phoneCamRoll = v; } });
-tgt('vuelo.inclinacion.y', 'Vuelo 3D', 'cabeceo / picada (pitch %)', -30, 30, 0, { apply: v => { phoneCamPitch = v; } });
+tgt('vuelo.inclinacion.x', 'Vuelo 3D', 'giro de cabeza / alabeo (roll %)', -40, 40, 0, { apply: v => { P.camRoll = v; } });
+tgt('vuelo.inclinacion.y', 'Vuelo 3D', 'cabeceo / picada (pitch %)', -30, 30, 0, { apply: v => { P.camPitch = v; } });
 tgt('vuelo.zoom', 'Vuelo 3D', 'inmersión macro vs satélite', 0.65, 2.6, 1.05, { apply: v => { P.zoom = v; } });
 tgt('polen.desfase', 'Polinización', 'multiplicador de dispersión', 1, 5, 1, { apply: v => { P.desfaseMult = v; } });
 tgt('flor.color_exotico', 'Polinización', 'espectro ultravioleta (°)', 0, 360, 0, { apply: v => { P.colorExotico = v; } });
@@ -564,7 +564,7 @@ function update3DWorld(now) {
 
     pgx.beginPath();
     pgx.arc(b.x, b.y, rad, 0, Math.PI * 2);
-    const hue = b.charge > 0 ? (uvHue + 55) % 360 : (b.z > 1.5 ? 55 : 45);
+    const hue = b.charge > 0 ? (autonomousHue + 55) % 360 : (b.z > 1.5 ? 55 : 45);
     pgx.fillStyle = `hsla(${hue}, 95%, ${b.charge > 0 ? '75%' : '60%'}, ${alpha})`;
     if ((isUV || P.zoom > 1.35) && b.z < 1.2) {
       pgx.shadowBlur = 12;
@@ -1088,11 +1088,54 @@ function updateLobbyPlayers() {
   }
 }
 
-// Botones del Lobby y Navegación
+// ==================== ONBOARDING CURATORIAL NARRATIVO (PASOS 1 AL 4) ====================
+let curOnboardingStep = 1;
+function setOnboardingStep(step) {
+  curOnboardingStep = step;
+  for (let s = 1; s <= 4; s++) {
+    const el = $(`#step${s}`);
+    if (el) {
+      if (s === step) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  }
+}
+
+// Al hacer clic en los pasos 1, 2 o 3, avanza secuencialmente al siguiente
+for (let s = 1; s <= 3; s++) {
+  const el = $(`#step${s}`);
+  if (el) {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      setOnboardingStep(s + 1);
+    };
+  }
+}
+
 const lobbyModal = $('#lobbyModal');
+if (lobbyModal) {
+  lobbyModal.onclick = (e) => {
+    // Si se hace clic en el fondo durante los pasos 1..3, avanza
+    if (curOnboardingStep < 4) {
+      setOnboardingStep(curOnboardingStep + 1);
+    }
+  };
+}
+
+// Avance también con teclado (Espacio, Enter, Flecha derecha)
+window.addEventListener('keydown', e => {
+  if (lobbyModal && !lobbyModal.classList.contains('hidden') && curOnboardingStep < 4) {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      setOnboardingStep(curOnboardingStep + 1);
+    }
+  }
+});
+
 const startGameBtn = $('#startGameBtn');
 if (startGameBtn) {
-  startGameBtn.onclick = async () => {
+  startGameBtn.onclick = async (e) => {
+    e.stopPropagation();
     if (startGameBtn.disabled) return;
     if (lobbyModal) lobbyModal.classList.add('hidden');
     await ensureAudio();
@@ -1104,6 +1147,7 @@ if (startGameBtn) {
 const reopenLobbyBtn = $('#reopenLobbyBtn');
 if (reopenLobbyBtn) {
   reopenLobbyBtn.onclick = () => {
+    setOnboardingStep(4); // Salta directamente al código QR
     if (lobbyModal) lobbyModal.classList.remove('hidden');
   };
 }
@@ -1172,27 +1216,31 @@ tacto.connect().then(() => {
 
 let frame = 0;
 (function mainLoop(now) {
-  evalMaps();
-  processGestures();
-  update3DWorld(now);
+  try {
+    evalMaps();
+    processGestures();
+    update3DWorld(now);
 
-  if (++frame % 4 === 0) {
-    updateMeters();
-    updateLobbyPlayers();
-    const activePhones = Object.values(tacto.devices).filter(k => k.online && k.id !== 'raton');
-    if (activePhones.length > 0) {
-      $('#waiting').innerHTML = `<b>📱 PRÓTESIS CONECTADA (${activePhones[0].name || 'Teléfono'})</b><span>Giroscopio y tacto activos · Inclina para volar y toca la pantalla para fecundar.</span>`;
-      $('#waiting').style.borderColor = 'rgba(74, 222, 128, 0.6)';
-      if (!window.__phoneToastDismissed) {
-        window.__phoneToastDismissed = true;
-        setTimeout(() => { if (activePhones.length > 0) $('#waiting').hidden = true; }, 4500);
+    if (++frame % 4 === 0) {
+      updateMeters();
+      updateLobbyPlayers();
+      const activePhones = Object.values(tacto.devices).filter(k => k.online && k.id !== 'raton');
+      if (activePhones.length > 0) {
+        $('#waiting').innerHTML = `<b>📱 PRÓTESIS CONECTADA (${activePhones[0].name || 'Teléfono'})</b><span>Giroscopio y tacto activos · Inclina para volar y toca la pantalla para fecundar.</span>`;
+        $('#waiting').style.borderColor = 'rgba(74, 222, 128, 0.6)';
+        if (!window.__phoneToastDismissed) {
+          window.__phoneToastDismissed = true;
+          setTimeout(() => { if (activePhones.length > 0) $('#waiting').hidden = true; }, 4500);
+        }
+      } else {
+        window.__phoneToastDismissed = false;
+        $('#waiting').innerHTML = `<b>Esperando conexión con teléfonos polinizadores...</b><span>Escanea el QR en pantalla con tu teléfono para activar el giroscopio y tacto.</span>`;
+        $('#waiting').style.borderColor = 'var(--line-2)';
+        $('#waiting').hidden = false;
       }
-    } else {
-      window.__phoneToastDismissed = false;
-      $('#waiting').innerHTML = `<b>Esperando conexión con teléfonos polinizadores...</b><span>Escanea el QR en pantalla con tu teléfono para activar el giroscopio y tacto.</span>`;
-      $('#waiting').style.borderColor = 'var(--line-2)';
-      $('#waiting').hidden = false;
     }
+  } catch (err) {
+    console.error('Frame loop error:', err);
   }
   requestAnimationFrame(mainLoop);
 })(performance.now());

@@ -4,37 +4,82 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UMWELT · El Jardín de Frankenstein</title>
-<link rel="stylesheet" href="ui.css?v=20261112_1215">
+<link rel="stylesheet" href="ui.css?v=20261112_1230">
 </head>
 <body>
 
-<!-- LOBBY OBLIGATORIO: SALA DE ESPERA Y CONEXIÓN QR (BLOQUEA LA PANTALLA HASTA CONECTAR) -->
-<div id="lobbyModal" class="lobby-modal" style="position:fixed; inset:0; z-index:999999; display:flex; align-items:center; justify-content:center; background:rgba(3,8,5,0.95); backdrop-filter:blur(25px); padding:24px;">
-  <div class="lobby-card">
-    <div class="lobby-tag">UMWELT · SALA DE CONEXIÓN OBLIGATORIA</div>
-    <h2>🐝 Conecta tu Teléfono para Comenzar</h2>
-    <p class="lobby-desc">
-      Escanea el código QR con tu teléfono móvil para convertirlo en la prótesis de vuelo y fecundación táctil.
-    </p>
+<!-- LOBBY NARRATIVO Y SALA DE CONEXIÓN OBLIGATORIA (ONBOARDING 4 PASOS) -->
+<div id="lobbyModal" class="lobby-modal" style="position:fixed; inset:0; z-index:999999; display:flex; align-items:center; justify-content:center; background:rgba(3,8,5,0.96); backdrop-filter:blur(30px); padding:24px;">
 
-    <div class="lobby-qr-box">
-      <img id="lobbyQr" alt="Código QR para conectar teléfonos" width="180" height="180">
-      <div class="lobby-sala-tag">SALA SINCRONIZADA: <span id="lobbySala">…</span></div>
-    </div>
-
-    <div class="lobby-players">
-      <div class="lobby-players-title">📱 Teléfonos conectados (<span id="playerCount">0</span>):</div>
-      <div id="playerList" class="player-list">
-        <span class="no-players">Esperando que al menos un teléfono escanee el QR y entre…</span>
-      </div>
-    </div>
-
-    <div class="lobby-actions">
-      <button id="startGameBtn" class="primary" disabled style="opacity: 0.5; cursor: not-allowed; background:linear-gradient(135deg, #a3e635, #65a30d); color:#051004; border:none; padding:15px; font-weight:700;">
-        ⏳ Esperando al menos 1 teléfono…
-      </button>
+  <!-- PASO 1: PREGUNTA CURATORIAL INICIAL -->
+  <div id="step1" class="onboarding-step active">
+    <span class="onboarding-step-indicator">1 / 4 · PREGUNTA CURATORIAL</span>
+    <blockquote class="curatorial-quote">
+      “¿Qué ocurre cuando intentamos crear o proteger una forma de vida cuya percepción no podemos experimentar?”
+    </blockquote>
+    <div class="onboarding-click-hint">
+      <span>Haz clic con el ratón para continuar</span>
+      <span class="onboarding-arrow">➔</span>
     </div>
   </div>
+
+  <!-- PASO 2: EL TÍTULO MONUMENTAL -->
+  <div id="step2" class="onboarding-step">
+    <span class="onboarding-step-indicator">2 / 4 · CONTEXTO</span>
+    <div class="lobby-tag" style="margin-bottom: 8px;">UMWELT · PROTOCOLO SHELLEY-UEXKÜLL</div>
+    <h1 class="curatorial-monumental-title">El Abismo de la Traducción</h1>
+    <div class="onboarding-click-hint">
+      <span>Haz clic con el ratón para continuar</span>
+      <span class="onboarding-arrow">➔</span>
+    </div>
+  </div>
+
+  <!-- PASO 3: TEXTO SINTETIZADO DE REFLEXIÓN Y JUEGO -->
+  <div id="step3" class="onboarding-step">
+    <span class="onboarding-step-indicator">3 / 4 · EL PACTO TÉCNICO</span>
+    <h2 style="font-family:var(--serif); font-size:24px; color:#fff; margin:0 0 16px 0; letter-spacing: 0.02em;">El Abismo de la Traducción</h2>
+    <div class="curatorial-card-text">
+      <p>Aquí, el teléfono funciona como una prótesis de vuelo. El usuario intenta fecundar y hacer florecer un campo, pero desconoce las reglas del mundo que intenta habitar.</p>
+      <p>El gesto atraviesa entonces otra traducción: el afecto se convierte en coordenadas, la delicadeza en presión y el movimiento en datos. La máquina no comprende la intención de cuidar; solo procesa señales.</p>
+      <p class="highlight-q">¿Qué entiende la máquina sobre dar vida?</p>
+      <p>Al intentar forzar la floración mediante impulsos eléctricos y algoritmos, la criatura escapa a la mano que la nutrió: el ecosistema deviene un organismo maquínico autónomo, donde nuestra presencia termina sobrando.</p>
+    </div>
+    <div class="onboarding-click-hint">
+      <span>Haz clic para conectar tu teléfono</span>
+      <span class="onboarding-arrow">➔</span>
+    </div>
+  </div>
+
+  <!-- PASO 4: CÓDIGO QR Y SALA DE ESPERA (CONEXIÓN OBLIGATORIA) -->
+  <div id="step4" class="onboarding-step">
+    <div class="lobby-card">
+      <span class="onboarding-step-indicator">4 / 4 · SALA DE ESPERA</span>
+      <div class="lobby-tag">UMWELT · PRÓTESIS MÓVIL</div>
+      <h2>🐝 Conecta tu Teléfono para Comenzar</h2>
+      <p class="lobby-desc">
+        Escanea el código QR con tu teléfono móvil para convertirlo en la prótesis de vuelo y fecundación táctil.
+      </p>
+
+      <div class="lobby-qr-box">
+        <img id="lobbyQr" alt="Código QR para conectar teléfonos" width="180" height="180">
+        <div class="lobby-sala-tag">SALA SINCRONIZADA: <span id="lobbySala">…</span></div>
+      </div>
+
+      <div class="lobby-players">
+        <div class="lobby-players-title">📱 Teléfonos conectados (<span id="playerCount">0</span>):</div>
+        <div id="playerList" class="player-list">
+          <span class="no-players">Esperando que al menos un teléfono escanee el QR y entre…</span>
+        </div>
+      </div>
+
+      <div class="lobby-actions">
+        <button id="startGameBtn" class="primary" disabled style="opacity: 0.5; cursor: not-allowed; background:linear-gradient(135deg, #a3e635, #65a30d); color:#051004; border:none; padding:15px; font-weight:700;">
+          ⏳ Esperando al menos 1 teléfono…
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- NAVEGACIÓN SUPERIOR FLOTANTE -->
@@ -220,8 +265,8 @@
   UMWELT · El Jardín de Frankenstein — Taller de Diseño y Programación de Proyectos Interactivos (PPI)
 </footer>
 
-<script src="config.js?v=20261112_1215"></script>
-<script src="tacto.js?v=20261112_1215"></script>
-<script src="exp.js?v=20261112_1215"></script>
+<script src="config.js?v=20261112_1230"></script>
+<script src="tacto.js?v=20261112_1230"></script>
+<script src="exp.js?v=20261112_1230"></script>
 </body>
 </html>
