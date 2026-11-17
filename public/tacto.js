@@ -32,8 +32,8 @@
 
   // ---------- broker ----------
   async function resolveBroker() {
-    if (Q.get('broker')) return Q.get('broker');
     if (CFG.broker) return CFG.broker;
+    if (Q.get('broker')) return Q.get('broker');
     try { // servido por el servidor de Tacto: usa su broker embebido
       const i = await (await fetch(new URL('info', document.baseURI), { cache: 'no-store' })).json();
       if (i && i.mqtt) return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/mqtt`;
@@ -42,8 +42,8 @@
   }
   // usuario y contraseña (brokers en la nube)
   const auth = broker => {
-    const user = Q.get('u') || CFG.username;
-    const pass = Q.get('p') || CFG.password;
+    const user = CFG.username || Q.get('u');
+    const pass = CFG.password || Q.get('p');
     return user ? { username: user, password: pass || '' } : {};
   };
   function loadMqtt() {
@@ -123,7 +123,7 @@
 
   // ---------- cliente de la experiencia ----------
   class Tacto {
-    constructor(o = {}) { this.sala = clean(o.sala) || room(); this.devices = {}; this.sel = 'auto'; this.estado = 'desconectado'; this.broker = null; this._h = {}; }
+    constructor(o = {}) { this.sala = clean(o.sala) || room(); this.devices = {}; this.sel = 'auto'; this.estado = 'desconectado'; this.broker = CFG.broker || Q.get('broker') || PUBLIC_BROKER; this._h = {}; }
     on(ev, fn) { (this._h[ev] ||= []).push(fn); return this; }
     emit(ev, ...a) { (this._h[ev] || []).forEach(f => { try { f(...a); } catch (e) { console.error(e); } }); }
     setEstado(s) { if (s !== this.estado) { this.estado = s; this.emit('estado', s); } }
@@ -179,6 +179,6 @@
     get(name, dev) { const d = dev ? this.devices[dev] : this.pick(); return d && name in d.ch ? d.ch[name] : null; }
   }
 
-  Object.assign(Tacto, { CHANNELS: CH, sala: room, nuevaSala, open, resolveBroker, rand, clean, PUBLIC_BROKER });
+  Object.assign(Tacto, { CHANNELS: CH, sala: room, nuevaSala, open, resolveBroker, auth, rand, clean, PUBLIC_BROKER });
   g.Tacto = Tacto;
 })(window);

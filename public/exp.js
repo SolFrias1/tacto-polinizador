@@ -674,14 +674,40 @@ function update3DWorld(now) {
 const tacto = new Tacto();
 const CHN = Object.fromEntries(Tacto.CHANNELS.map(c => [c.name, c]));
 
+function updateLobbyBrokerStatus(status, errorMsg) {
+  const dot = $('#lobbyMqttDot');
+  if (!dot) return;
+  if (status === 'conectado') {
+    const brokerShort = tacto.broker ? tacto.broker.replace(/^wss?:\/\//, '').split('.')[0] : 'en línea';
+    dot.textContent = `● En línea (${brokerShort})`;
+    dot.style.color = '#4ade80';
+  } else if (status === 'reconectando') {
+    dot.textContent = '● Reconectando…';
+    dot.style.color = '#facc15';
+  } else if (status === 'error') {
+    dot.textContent = '● Error: ' + (errorMsg || 'sin conexión');
+    dot.style.color = '#ef4444';
+  } else {
+    dot.textContent = '● Conectando…';
+    dot.style.color = '#eab308';
+  }
+}
+
 tacto.on('estado', s => {
   const e = $('#estado');
-  e.className = 'dot ' + (s === 'conectado' ? 'on' : 'warn');
-  e.textContent = '● ' + s;
+  if (e) {
+    e.className = 'dot ' + (s === 'conectado' ? 'on' : 'warn');
+    e.textContent = '● ' + s;
+  }
+  updateLobbyBrokerStatus(s);
 });
 tacto.on('error', e => {
-  $('#estado').className = 'dot warn';
-  $('#estado').textContent = '● ' + (e.message || 'error');
+  const el = $('#estado');
+  if (el) {
+    el.className = 'dot warn';
+    el.textContent = '● ' + (e.message || 'error');
+  }
+  updateLobbyBrokerStatus('error', e.message);
 });
 
 // ============================ CONTROLES DE ESCRITORIO =================
@@ -1051,6 +1077,7 @@ function escapeHtml(str) {
 }
 
 function updateLobbyPlayers() {
+  updateLobbyBrokerStatus(tacto.estado);
   const realPhones = Object.values(tacto.devices).filter(d => d.online && d.id !== 'raton');
   const count = realPhones.length;
   const countEl = $('#playerCount');
@@ -1144,6 +1171,17 @@ if (startGameBtn) {
   };
 }
 
+const skipLobbyBtn = $('#skipLobbyBtn');
+if (skipLobbyBtn) {
+  skipLobbyBtn.onclick = async (e) => {
+    e.stopPropagation();
+    if (lobbyModal) lobbyModal.classList.add('hidden');
+    await ensureAudio();
+    const arena = $('#arena');
+    if (arena) arena.scrollIntoView({ behavior: 'smooth' });
+  };
+}
+
 const reopenLobbyBtn = $('#reopenLobbyBtn');
 if (reopenLobbyBtn) {
   reopenLobbyBtn.onclick = () => {
@@ -1161,9 +1199,12 @@ async function updateJoin() {
   } catch {}
   if (!base) base = new URL('index.html', location.href).href;
   let u = base + (base.includes('?') ? '&' : '?') + 'sala=' + tacto.sala;
-  if (!local || Q.get('broker')) u += '&broker=' + encodeURIComponent(tacto.broker || Tacto.PUBLIC_BROKER);
-  if (CFG.username) u += '&u=' + encodeURIComponent(CFG.username);
-  if (CFG.password) u += '&p=' + encodeURIComponent(CFG.password);
+  const effectiveBroker = tacto.broker || CFG.broker || Q.get('broker') || Tacto.PUBLIC_BROKER;
+  u += '&broker=' + encodeURIComponent(effectiveBroker);
+  const effectiveUser = CFG.username || Q.get('u');
+  const effectivePass = CFG.password || Q.get('p');
+  if (effectiveUser) u += '&u=' + encodeURIComponent(effectiveUser);
+  if (effectivePass) u += '&p=' + encodeURIComponent(effectivePass);
 
   // Actualizar textos en panel inferior y en modal pop-up de lobby
   if ($('#phoneUrl')) $('#phoneUrl').textContent = u;

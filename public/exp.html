@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UMWELT · El Jardín de Frankenstein</title>
-<link rel="stylesheet" href="ui.css?v=20261116_1430">
+<link rel="stylesheet" href="ui.css?v=20261116_2130">
 </head>
 <body>
 
@@ -65,6 +65,10 @@
         <div class="lobby-sala-tag">SALA SINCRONIZADA: <span id="lobbySala">…</span></div>
       </div>
 
+      <div id="lobbyMqttStatus" style="font-size: 11px; color: var(--mut); text-align: center; margin-top: -6px; margin-bottom: 12px;">
+        Servidor MQTT: <span id="lobbyMqttDot" style="color: #eab308; font-weight: 600;">● Conectando…</span>
+      </div>
+
       <div class="lobby-players">
         <div class="lobby-players-title">📱 Teléfonos conectados (<span id="playerCount">0</span>):</div>
         <div id="playerList" class="player-list">
@@ -76,6 +80,11 @@
         <button id="startGameBtn" class="primary" disabled style="opacity: 0.5; cursor: not-allowed; background:linear-gradient(135deg, #a3e635, #65a30d); color:#051004; border:none; padding:15px; font-weight:700;">
           ⏳ Esperando al menos 1 teléfono…
         </button>
+        <div style="text-align: center; margin-top: 10px;">
+          <button id="skipLobbyBtn" type="button" style="background: transparent; border: none; color: var(--mut); font-size: 11px; text-decoration: underline; cursor: pointer; padding: 4px 8px;">
+            Omitir espera y explorar en modo solitario
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -265,8 +274,8 @@
   UMWELT · El Jardín de Frankenstein — Taller de Diseño y Programación de Proyectos Interactivos (PPI)
 </footer>
 
-<script src="config.js?v=20261116_1430"></script>
-<script src="tacto.js?v=20261116_1430"></script>
-<script src="exp.js?v=20261116_1430"></script>
+<script src="config.js?v=20261116_2130"></script>
+<script src="tacto.js?v=20261116_2130"></script>
+<script src="exp.js?v=20261116_2130"></script>
 </body>
 </html>
