@@ -203,17 +203,17 @@ floriImg.onload = () => {
 };
 
 function renderInfiniteMeadowBase() {
-  // Mosaico botánico continuo y luminoso para una visualización natural y viva
-  const pat = bgx.createPattern(floriImg, 'repeat');
-  bgx.fillStyle = pat;
-  bgx.fillRect(0, 0, baseCv.width, baseCv.height);
+  if (!floriImg.complete) return;
+  bgx.clearRect(0, 0, baseCv.width, baseCv.height);
+  // Dibujar la fotografía cubriendo todo el plano 3D sin mosaicos repetidos: ¡CERO costuras ni líneas diagonales!
+  bgx.drawImage(floriImg, 0, 0, baseCv.width, baseCv.height);
 
-  // Viñeta periférica atmosférica suave: mantiene el prado central hermoso, vivo y nítido
+  // Viñeta atmosférica en los extremos para fundir el campo con el horizonte 3D
   const cx = baseCv.width / 2, cy = baseCv.height / 2;
-  const grad = bgx.createRadialGradient(cx, cy, baseCv.width * 0.28, cx, cy, baseCv.width * 0.62);
+  const grad = bgx.createRadialGradient(cx, cy, baseCv.width * 0.35, cx, cy, baseCv.width * 0.65);
   grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  grad.addColorStop(0.75, 'rgba(3, 8, 5, 0.16)');
-  grad.addColorStop(1, 'rgba(3, 8, 5, 0.52)');
+  grad.addColorStop(0.7, 'rgba(3, 8, 5, 0.22)');
+  grad.addColorStop(1, 'rgba(3, 8, 5, 0.72)');
   bgx.fillStyle = grad;
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
 }
@@ -237,16 +237,16 @@ function resetField() {
 $('#resetFieldBtn').onclick = resetField;
 $('#modalResetBtn').onclick = resetField;
 
-// 140 partículas del enjambre
+// 140 partículas del enjambre: abejas / luciérnagas doradas y luminosas
 const SWARM = Array.from({ length: 140 }, () => ({
   x: Math.random() * 1280,
   y: Math.random() * 720,
-  z: 0.4 + Math.random() * 2.2,
-  vx: (Math.random() - 0.5) * 1.2,
-  vy: (Math.random() - 0.5) * 1.2,
+  z: 0.5 + Math.random() * 2.0,
+  vx: (Math.random() - 0.5) * 1.5,
+  vy: (Math.random() - 0.5) * 1.5,
   orbitAngle: Math.random() * Math.PI * 2,
-  speed: 0.7 + Math.random() * 1.2,
-  size: 1.4 + Math.random() * 2.2,
+  speed: 0.8 + Math.random() * 1.2,
+  size: 3.5 + Math.random() * 4.0,
   charge: 0
 }));
 
@@ -266,7 +266,7 @@ function getDisplacement(touchX, touchY, factorMult = 1) {
   }
 
   let attempts = 1;
-  if (nearest && minDist < 160) {
+  if (nearest && minDist < 180) {
     nearest.attempts++;
     nearest.lastTime = performance.now();
     attempts = nearest.attempts;
@@ -275,8 +275,9 @@ function getDisplacement(touchX, touchY, factorMult = 1) {
     if (flowerSpots.length > 80) flowerSpots.shift();
   }
 
+  // 5. Repetición en la misma zona: Desfase exponencial de la floración
   const angle = Math.sin(touchX * 18 + touchY * 11) * Math.PI * 2;
-  const distance = Math.min(520, 16 * Math.pow(1.68, attempts - 1) * factorMult);
+  const distance = Math.min(560, 18 * Math.pow(1.68, attempts - 1) * factorMult);
   const dx = Math.cos(angle) * distance;
   const dy = Math.sin(angle) * distance * 0.55;
 
@@ -292,48 +293,51 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
   if (!floriImg.complete) return;
   
   lgx.save();
-  const rad = (32 + Math.random() * 32) * radMult;
+  const rad = (30 + Math.random() * 26) * radMult;
 
   if (isNecrosis) {
+    // 6. touch.d (yema plana / presión): Necrosis por sobrecarga
     lgx.globalCompositeOperation = 'source-over';
-    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.3);
-    grad.addColorStop(0, 'rgba(18, 5, 3, 0.92)');
-    grad.addColorStop(0.6, 'rgba(45, 12, 6, 0.6)');
+    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.4);
+    grad.addColorStop(0, 'rgba(10, 3, 2, 0.95)');
+    grad.addColorStop(0.55, 'rgba(35, 10, 5, 0.75)');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     lgx.fillStyle = grad;
     lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad * 1.3, 0, Math.PI * 2);
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.4, 0, Math.PI * 2);
     lgx.fill();
   } else {
-    // 1. Halo de polen bioluminiscente en el punto de contacto
-    lgx.globalCompositeOperation = 'lighter';
-    const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.35);
-    halo.addColorStop(0, 'rgba(230, 255, 61, 0.65)');
-    halo.addColorStop(0.5, 'rgba(74, 222, 128, 0.3)');
+    // 2 & 4. Halo bioluminiscente de polen en el punto de contacto
+    lgx.globalCompositeOperation = 'screen';
+    const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.5);
+    const flowerHue = (P.colorExotico + Math.random() * 35) % 360;
+    halo.addColorStop(0, `hsla(${flowerHue}, 100%, 78%, 0.85)`);
+    halo.addColorStop(0.5, `hsla(${(flowerHue + 40) % 360}, 95%, 55%, 0.4)`);
     halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
     lgx.fillStyle = halo;
     lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad * 1.35, 0, Math.PI * 2);
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.5, 0, Math.PI * 2);
     lgx.fill();
 
-    // 2. Flor fotográfica viva: toma cuadrantes de flori.png para que brote una flor hermosa y nítida
-    lgx.globalCompositeOperation = 'source-over';
+    // 4. Estela de flores vivas y nítidas que brotan sobre el campo muerto
+    lgx.globalCompositeOperation = 'screen';
     lgx.globalAlpha = 0.95;
     lgx.beginPath();
     lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
     lgx.clip();
     
-    const sliceIndex = Math.floor(Math.random() * 4);
-    const sw = (floriImg.width || 2048) / 4;
-    const sh = floriImg.height || 768;
-    const sx = sliceIndex * sw;
-    lgx.drawImage(floriImg, sx, 0, sw, sh, targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
+    // Proyectar cuadrante correspondiente de floriImg
+    const normX = targetWorldX / lifeCv.width;
+    const normY = targetWorldY / lifeCv.height;
+    const sx = clamp(normX * floriImg.width - rad, 0, floriImg.width - rad * 2);
+    const sy = clamp(normY * floriImg.height - rad, 0, floriImg.height - rad * 2);
+    lgx.drawImage(floriImg, sx, sy, rad * 2, rad * 2, targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
 
     totalBlooms++;
   }
   lgx.restore();
 
-  const coverage = Math.min(100, Math.round((totalBlooms / 800) * 100));
+  const coverage = Math.min(100, Math.round((totalBlooms / 350) * 100));
   $('#statCoverage').textContent = coverage + '%';
   if (coverage >= 80 && !isClimax) {
     triggerClimax();
@@ -446,8 +450,31 @@ function update3DWorld(now) {
   curCamRoll += (P.camRoll - curCamRoll) * 0.085;
   curCamPitch += (P.camPitch - curCamPitch) * 0.085;
 
-  const isUV = $('#stageWrap').classList.contains('uv-active');
-  const isSatellite = P.zoom < 0.9;
+  // 1. Modulación de paneo estéreo (izq/der) y afinación general con la inclinación del móvil
+  if (A.pan && A.ctx) {
+    A.pan.pan.setTargetAtTime(clamp(curCamRoll / 35, -1, 1), A.ctx.currentTime, 0.08);
+  }
+  if (A.nodes['abeja'] && A.nodes['abeja'].playbackRate && A.ctx) {
+    A.nodes['abeja'].playbackRate.setTargetAtTime(clamp(1.0 + curCamPitch * 0.006, 0.85, 1.25), A.ctx.currentTime, 0.08);
+  }
+
+  // 7. touch.dist / Zoom: Barrido del filtro acústico y mutación al Espectro UV
+  const sweepHz = clamp(3200 + (P.zoom - 0.7) * 4800, 1600, 15000);
+  if (A.filt && A.ctx) {
+    A.filt.frequency.setTargetAtTime(sweepHz, A.ctx.currentTime, 0.08);
+  }
+
+  const isUV = $('#stageWrap').classList.contains('uv-active') || P.zoom >= 1.6;
+  const isSatellite = P.zoom < 0.95 && !isUV;
+  $('#stageWrap').classList.toggle('uv-active', isUV);
+
+  // Sincronizar botones de vista
+  document.querySelectorAll('.view-btn').forEach(b => {
+    const v = b.dataset.view;
+    if (v === 'satellite') b.classList.toggle('active', isSatellite);
+    if (v === 'fpv') b.classList.toggle('active', !isSatellite && !isUV);
+    if (v === 'uv') b.classList.toggle('active', isUV);
+  });
 
   if (isUV) {
     $('#statChroma').textContent = 'Espectro UV (Abeja)';
@@ -466,12 +493,12 @@ function update3DWorld(now) {
 
   groundPlane.style.transform = `rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${transX}px, ${transY}px, 0) scale(${scale})`;
 
-  // Filtro cromático: solo en clímax irreversible o en vista explícita UV (para no alterar la fotografía original)
+  // Filtro cromático: en clímax irreversible o en vista UV
   if (isClimax) {
     autonomousHue = (autonomousHue + 0.6) % 360;
-    lifeCv.style.filter = `hue-rotate(${autonomousHue}deg) saturate(110%) brightness(105%)`;
+    lifeCv.style.filter = `hue-rotate(${autonomousHue}deg) saturate(130%) brightness(115%)`;
   } else if (isUV) {
-    lifeCv.style.filter = `hue-rotate(220deg) saturate(135%) brightness(110%)`;
+    lifeCv.style.filter = `hue-rotate(220deg) saturate(180%) brightness(120%)`;
   } else {
     lifeCv.style.filter = 'none';
   }
@@ -494,7 +521,7 @@ function update3DWorld(now) {
         const cy = lifeCv.height / 2;
         const wx = cx + (sx - partCv.width / 2) / P.zoom;
         const wy = cy + (sy - partCv.height / 2) / P.zoom;
-        swarmDepositPollen(wx, wy, pol.td > 78, 1.35);
+        swarmDepositPollen(wx, wy, pol.td > 70, 1.2);
       }
     }
   }
@@ -503,49 +530,54 @@ function update3DWorld(now) {
     const b = SWARM[i];
 
     if (isSwarming) {
-      let targetScreenX = partCv.width / 2;
-      let targetScreenY = partCv.height / 2;
+      let targetCenterScreenX = partCv.width / 2;
+      let targetCenterScreenY = partCv.height / 2;
       let targetIsDown = false;
 
       if (isClimax) {
-        targetScreenX = partCv.width / 2 + Math.cos(now * 0.0025 + i) * (partCv.width * 0.35);
-        targetScreenY = partCv.height / 2 + Math.sin(now * 0.0025 + i) * (partCv.height * 0.28);
-        targetIsDown = false;
+        targetCenterScreenX = partCv.width / 2 + Math.cos(now * 0.0025 + i) * (partCv.width * 0.35);
+        targetCenterScreenY = partCv.height / 2 + Math.sin(now * 0.0025 + i) * (partCv.height * 0.28);
       } else {
         const pol = pollinators[i % pollinators.length];
         targetIsDown = pol.isDown;
         const disp = getDisplacement(pol.tx, pol.ty, P.desfaseMult);
-        targetScreenX = (disp.worldX / lifeCv.width) * partCv.width;
-        targetScreenY = (disp.worldY / lifeCv.height) * partCv.height;
+        targetCenterScreenX = (disp.worldX / lifeCv.width) * partCv.width;
+        targetCenterScreenY = (disp.worldY / lifeCv.height) * partCv.height;
       }
+
+      // Distribución orbital viva para que las 140 abejas dancen alrededor del polinizador
+      const angleOffset = (i / SWARM.length) * Math.PI * 2;
+      const swarmRadius = targetIsDown ? (20 + (i % 6) * 16) : (50 + (i % 8) * 22);
+      const targetScreenX = targetCenterScreenX + Math.cos(now * 0.003 + angleOffset) * swarmRadius;
+      const targetScreenY = targetCenterScreenY + Math.sin(now * 0.003 + angleOffset) * (swarmRadius * 0.65);
 
       const dx = targetScreenX - b.x;
       const dy = targetScreenY - b.y;
       const dist = Math.hypot(dx, dy);
 
       const force = clamp(260 / (dist + 20), 0.2, 3.2);
-      b.vx += (dx / (dist || 1)) * force * 0.35;
-      b.vy += (dy / (dist || 1)) * force * 0.35;
+      b.vx += (dx / (dist || 1)) * force * 0.32;
+      b.vy += (dy / (dist || 1)) * force * 0.32;
       // Vórtice espiral de colmena
-      b.vx += (-dy / (dist || 1)) * (isClimax ? 3.0 : 1.8);
-      b.vy += (dx / (dist || 1)) * (isClimax ? 3.0 : 1.8);
+      b.vx += (-dy / (dist || 1)) * (isClimax ? 2.8 : 1.6);
+      b.vy += (dx / (dist || 1)) * (isClimax ? 2.8 : 1.6);
       b.vx *= 0.94;
       b.vy *= 0.94;
 
       // Depositar polen si el polinizador está presionando y la abeja pasa cerca
-      if (targetIsDown && dist < 125 && Math.random() > 0.25 && !isClimax) {
+      if (targetIsDown && dist < 130 && Math.random() > 0.25 && !isClimax) {
         const isNecrotic = P.necrosis > 0.6 || isRightClick;
         const cx = lifeCv.width / 2;
         const cy = lifeCv.height / 2;
         const wx = cx + (b.x - partCv.width / 2) / P.zoom;
         const wy = cy + (b.y - partCv.height / 2) / P.zoom;
-        swarmDepositPollen(wx, wy, isNecrotic, 0.85);
+        swarmDepositPollen(wx, wy, isNecrotic, 0.9);
         b.charge = 1;
       }
     } else {
-      b.orbitAngle += 0.018 * b.speed;
-      b.vx += Math.cos(b.orbitAngle) * 0.1 - curCamRoll * 0.008;
-      b.vy += Math.sin(b.orbitAngle) * 0.07 - curCamPitch * 0.008;
+      b.orbitAngle += 0.016 * b.speed;
+      b.vx += Math.cos(b.orbitAngle) * 0.12 - curCamRoll * 0.008;
+      b.vy += Math.sin(b.orbitAngle) * 0.09 - curCamPitch * 0.008;
       b.vx *= 0.96;
       b.vy *= 0.96;
     }
@@ -554,26 +586,23 @@ function update3DWorld(now) {
     b.y += b.vy;
 
     // Envolver de forma dinámica en toda la pantalla sin cortes
-    if (b.x < -30) b.x += partCv.width + 60;
-    if (b.x > partCv.width + 30) b.x -= partCv.width + 60;
-    if (b.y < -30) b.y += partCv.height + 60;
-    if (b.y > partCv.height + 30) b.y -= partCv.height + 60;
+    if (b.x < -40) b.x += partCv.width + 80;
+    if (b.x > partCv.width + 40) b.x -= partCv.width + 80;
+    if (b.y < -40) b.y += partCv.height + 80;
+    if (b.y > partCv.height + 40) b.y -= partCv.height + 80;
 
-    const rad = b.size * (0.8 + 0.4 / b.z) * (P.zoom > 1.35 ? 1.5 : 1);
-    const alpha = clamp(0.25 + (1 / b.z) * 0.45, 0.15, 0.9);
+    const rad = b.size * (0.9 + 0.35 / b.z) * (P.zoom > 1.35 ? 1.4 : 1.0);
+    const alpha = clamp(0.45 + (1 / b.z) * 0.45, 0.3, 0.95);
 
+    pgx.save();
     pgx.beginPath();
     pgx.arc(b.x, b.y, rad, 0, Math.PI * 2);
-    const hue = b.charge > 0 ? (autonomousHue + 55) % 360 : (b.z > 1.5 ? 55 : 45);
-    pgx.fillStyle = `hsla(${hue}, 95%, ${b.charge > 0 ? '75%' : '60%'}, ${alpha})`;
-    if ((isUV || P.zoom > 1.35) && b.z < 1.2) {
-      pgx.shadowBlur = 12;
-      pgx.shadowColor = `hsla(${hue}, 100%, 70%, 0.65)`;
-    } else {
-      pgx.shadowBlur = 0;
-    }
+    const hue = b.charge > 0 ? (autonomousHue + 55) % 360 : (b.z > 1.4 ? 52 : 46);
+    pgx.fillStyle = `hsla(${hue}, 98%, ${b.charge > 0 ? '78%' : '65%'}, ${alpha})`;
+    pgx.shadowBlur = b.charge > 0 ? 16 : 9;
+    pgx.shadowColor = `hsla(${hue}, 100%, 70%, 0.8)`;
     pgx.fill();
-    pgx.shadowBlur = 0;
+    pgx.restore();
     b.charge *= 0.92;
   }
 
@@ -836,12 +865,16 @@ function processGestures() {
 
     const isStress = anyNecrosis || sumFingers >= 4 || isRigid;
 
-    // AUDIO ADAPTATIVO:
+    // AUDIO ADAPTATIVO & RESPUESTA GESTUAL:
     // ESTADO 1: ARMÓNICO (Abeja normal zumbando nítida y presente)
-    // ESTADO 2: ESTRÉS (Mala abeja irritada y agresiva)
+    // ESTADO 2: ESTRÉS (Mala abeja irritada y agresiva, con temblor de cámara e inestabilidad)
     if (isStress) {
       setGain('mala_abeja', 0.95, 0.06);
       setGain('abeja', 0.08, 0.08);
+
+      // 3. La flor vibra con temblor e inestabilidad (estrés cinemático)
+      curCamRoll += (Math.random() - 0.5) * 2.4;
+      curCamPitch += (Math.random() - 0.5) * 2.0;
 
       if (anyNecrosis) {
         $('#statTension').textContent = 'SOBRECARGA (Necrosis)';
@@ -850,43 +883,56 @@ function processGestures() {
         $('#statTension').textContent = 'HISTERIA COLECTIVA';
         $('#statTension').style.color = 'var(--err)';
       } else {
-        $('#statTension').textContent = 'Abeja Irritada (Rigidez)';
+        $('#statTension').textContent = 'Abeja Irritada (Temblor / Rigidez)';
         $('#statTension').style.color = 'var(--warn)';
       }
     } else {
-      // Vuelo armónico fluido y continuo
+      // 4. Movimiento fluido / rápido: Vuelo armónico continuo y estelas de pétalos
       setGain('abeja', 0.95, 0.06);
       setGain('mala_abeja', 0.0, 0.08);
-      $('#statTension').textContent = 'Armonía (Vuelo Activo)';
+      $('#statTension').textContent = 'Armonía (Vuelo Fluido)';
       $('#statTension').style.color = 'var(--ok)';
 
       // Modulación orgánica del tono de vuelo de la abeja con la velocidad
-      if (A.nodes['abeja'] && A.nodes['abeja'].playbackRate) {
+      if (A.nodes['abeja'] && A.nodes['abeja'].playbackRate && A.ctx) {
         const rate = clamp(0.94 + dPos * 4.2, 0.90, 1.25);
         A.nodes['abeja'].playbackRate.setTargetAtTime(rate, A.ctx.currentTime, 0.08);
       }
     }
 
-    // Si el contacto persiste más de 1.8 segundos, la colmena mecánica empieza a zumbar
+    // 5. Repetición en la misma zona / contacto persistente: Colmena mecánica despierta
     const elapsed = (now - touchDownTime) / 1000;
-    if (elapsed > 1.8) {
-      const volMaq = Math.min(0.85, (elapsed - 1.8) * 0.35);
+    if (elapsed > 1.4) {
+      const volMaq = Math.min(0.90, (elapsed - 1.4) * 0.4);
       setGain('maquina', volMaq, 0.1);
+      setGain('palpito', Math.max(0.1, 1 - (elapsed - 1.4) * 0.5), 0.1);
     } else {
       setGain('maquina', 0, 0.1);
     }
 
+    // 6. touch.d grande / fuerza: Disparo de alarma y necrosis
     if (anyNecrosis && !alarmFired) {
       playTrigger('alarma');
       alarmFired = true;
     }
 
-    if (sumFingers >= 3 && lastTouchCount < 3) playTrigger('robot');
+    // 8. touch.n >= 3: Falla de traducción / robot.mp3 + glitch visual de contraste
+    if (sumFingers >= 3 && lastTouchCount < 3) {
+      playTrigger('robot');
+      const wrap = $('#stageWrap');
+      if (wrap) {
+        wrap.classList.add('glitch-active');
+        setTimeout(() => wrap.classList.remove('glitch-active'), 320);
+      }
+    }
   }
 
-  // Al soltar todos los contactos: apagar abejas suavemente y sonar pago
+  // 9. Soltar contacto (touch.down = 0): Levantar los dedos del teléfono
+  // Disparo (One-shot) pago.mp3 seguido del silencio/atenuación transaccional de bosque.flac
   if (activeCount === 0 && lastTouchCount > 0 && !isClimax) {
     playTrigger('pago');
+    setGain('bosque', 0.06, 0.3);
+    setTimeout(() => { if (A.ctx) setGain('bosque', AUDIO_DEFS.bosque.baseVol, 1.8); }, 1500);
     setGain('palpito', 0, 0.15);
     setGain('abeja', 0, 0.15);
     setGain('mala_abeja', 0, 0.15);
