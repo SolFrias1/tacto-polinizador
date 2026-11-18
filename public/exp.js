@@ -195,6 +195,9 @@ function syncCanvasSizes() {
 }
 window.addEventListener('resize', syncCanvasSizes);
 
+const TILE_W = 800;
+const TILE_H = 300; // Aspect ratio exacto: 800 / 300 = 2.6667 (idéntico a flori.png: 2048 / 768)
+
 const floriImg = new Image();
 floriImg.crossOrigin = 'anonymous';
 floriImg.src = 'imagen/flori.png';
@@ -205,15 +208,34 @@ floriImg.onload = () => {
 function renderInfiniteMeadowBase() {
   if (!floriImg.complete) return;
   bgx.clearRect(0, 0, baseCv.width, baseCv.height);
-  // Dibujar la fotografía cubriendo todo el plano 3D sin mosaicos repetidos: ¡CERO costuras ni líneas diagonales!
-  bgx.drawImage(floriImg, 0, 0, baseCv.width, baseCv.height);
 
-  // Viñeta atmosférica en los extremos para fundir el campo con el horizonte 3D
+  const cols = Math.ceil(baseCv.width / TILE_W);
+  const rows = Math.ceil(baseCv.height / TILE_H);
+
+  // Mosaico botánico continuo y simétrico en espejo: CERO costuras ni líneas divisorias
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      bgx.save();
+      const x = c * TILE_W;
+      const y = r * TILE_H;
+
+      // Alternar reflejo horizontal y vertical para continuidad perfecta en los límites
+      const flipX = (c % 2 === 1);
+      const flipY = (r % 2 === 1);
+
+      bgx.translate(flipX ? x + TILE_W : x, flipY ? y + TILE_H : y);
+      bgx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+      bgx.drawImage(floriImg, 0, 0, TILE_W, TILE_H);
+      bgx.restore();
+    }
+  }
+
+  // Viñeta atmosférica suave en los extremos para fundir el campo con el horizonte 3D
   const cx = baseCv.width / 2, cy = baseCv.height / 2;
-  const grad = bgx.createRadialGradient(cx, cy, baseCv.width * 0.35, cx, cy, baseCv.width * 0.65);
+  const grad = bgx.createRadialGradient(cx, cy, baseCv.width * 0.38, cx, cy, baseCv.width * 0.68);
   grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  grad.addColorStop(0.7, 'rgba(3, 8, 5, 0.22)');
-  grad.addColorStop(1, 'rgba(3, 8, 5, 0.72)');
+  grad.addColorStop(0.7, 'rgba(3, 8, 5, 0.2)');
+  grad.addColorStop(1, 'rgba(3, 8, 5, 0.75)');
   bgx.fillStyle = grad;
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
 }
@@ -232,6 +254,16 @@ function resetField() {
     setGain('maquina', 0, 0.2);
     setGain('mala_abeja', 0, 0.2);
     setGain('abeja', 0, 0.2);
+  }
+  const btn = $('#resetFieldBtn');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '🍂 Prado marchitado';
+    btn.style.color = '#ef4444';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = '';
+    }, 1200);
   }
 }
 $('#resetFieldBtn').onclick = resetField;
@@ -293,45 +325,65 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
   if (!floriImg.complete) return;
   
   lgx.save();
-  const rad = (30 + Math.random() * 26) * radMult;
+  const rad = (38 + Math.random() * 26) * radMult;
 
   if (isNecrosis) {
     // 6. touch.d (yema plana / presión): Necrosis por sobrecarga
     lgx.globalCompositeOperation = 'source-over';
-    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.4);
-    grad.addColorStop(0, 'rgba(10, 3, 2, 0.95)');
-    grad.addColorStop(0.55, 'rgba(35, 10, 5, 0.75)');
+    const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.5);
+    grad.addColorStop(0, 'rgba(10, 3, 2, 0.96)');
+    grad.addColorStop(0.55, 'rgba(40, 12, 6, 0.85)');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     lgx.fillStyle = grad;
     lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad * 1.4, 0, Math.PI * 2);
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.5, 0, Math.PI * 2);
     lgx.fill();
   } else {
-    // 2 & 4. Halo bioluminiscente de polen en el punto de contacto
-    lgx.globalCompositeOperation = 'screen';
-    const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.5);
+    // 2 & 4. Fecundación Viva sobre el prado durmiente
+    lgx.globalCompositeOperation = 'source-over';
+
+    // A) Halo bioluminiscente de polen en el punto de contacto
+    const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.6);
     const flowerHue = (P.colorExotico + Math.random() * 35) % 360;
-    halo.addColorStop(0, `hsla(${flowerHue}, 100%, 78%, 0.85)`);
-    halo.addColorStop(0.5, `hsla(${(flowerHue + 40) % 360}, 95%, 55%, 0.4)`);
+    halo.addColorStop(0, `hsla(${flowerHue}, 100%, 75%, 0.85)`);
+    halo.addColorStop(0.45, `hsla(${(flowerHue + 40) % 360}, 95%, 55%, 0.45)`);
     halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
     lgx.fillStyle = halo;
     lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad * 1.5, 0, Math.PI * 2);
+    lgx.arc(targetWorldX, targetWorldY, rad * 1.6, 0, Math.PI * 2);
     lgx.fill();
 
-    // 4. Estela de flores vivas y nítidas que brotan sobre el campo muerto
-    lgx.globalCompositeOperation = 'screen';
-    lgx.globalAlpha = 0.95;
+    // B) Estela de flores vivas y nítidas que brotan sobre el campo muerto
+    lgx.save();
     lgx.beginPath();
     lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
     lgx.clip();
-    
-    // Proyectar cuadrante correspondiente de floriImg
-    const normX = targetWorldX / lifeCv.width;
-    const normY = targetWorldY / lifeCv.height;
-    const sx = clamp(normX * floriImg.width - rad, 0, floriImg.width - rad * 2);
-    const sy = clamp(normY * floriImg.height - rad, 0, floriImg.height - rad * 2);
+
+    // Calcular posición correspondiente dentro del mosaico botánico simétrico
+    const col = Math.floor(targetWorldX / TILE_W);
+    const row = Math.floor(targetWorldY / TILE_H);
+    const localX = ((targetWorldX % TILE_W) + TILE_W) % TILE_W;
+    const localY = ((targetWorldY % TILE_H) + TILE_H) % TILE_H;
+    const flipX = (col % 2 === 1);
+    const flipY = (row % 2 === 1);
+
+    const imgX = flipX ? (TILE_W - localX) : localX;
+    const imgY = flipY ? (TILE_H - localY) : localY;
+
+    const sx = clamp((imgX / TILE_W) * floriImg.width - rad, 0, floriImg.width - rad * 2);
+    const sy = clamp((imgY / TILE_H) * floriImg.height - rad, 0, floriImg.height - rad * 2);
+
     lgx.drawImage(floriImg, sx, sy, rad * 2, rad * 2, targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
+
+    // C) Chispa de luz y polen floral dorado sobre los pétalos vivos
+    const florShine = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad);
+    florShine.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+    florShine.addColorStop(0.5, 'rgba(230, 255, 61, 0.2)');
+    florShine.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    lgx.fillStyle = florShine;
+    lgx.fill();
+
+    lgx.restore(); // Terminar clip
 
     totalBlooms++;
   }
@@ -393,39 +445,14 @@ function update3DWorld(now) {
     const tx = dev.ch['touch.x'] ?? 0.5;
     const ty = dev.ch['touch.y'] ?? 0.5;
 
-    // Soporte para modo Horizontal (Control de Play) con 2 pulgares:
-    // Pulgar izquierdo dirige el timón de vuelo, pulgar derecho fecunda el campo
-    let steerX = tx, steerY = ty;
-    const t1x = dev.ch['t1.x'], t1y = dev.ch['t1.y'];
-    const t2x = dev.ch['t2.x'], t2y = dev.ch['t2.y'];
-    const hasTwoFingers = t1x != null && t2x != null;
-
-    if (hasTwoFingers) {
-      if (t1x <= t2x) { steerX = t1x; steerY = t1y; }
-      else { steerX = t2x; steerY = t2y; }
-    }
-
-    if (isDown) {
-      const centerTargetX = hasTwoFingers ? 0.25 : 0.5;
-      const touchRoll = (steerX - centerTargetX) * 90;
-      const touchPitch = (steerY - 0.5) * 65;
-      targetRoll += touchRoll;
-      targetPitch += touchPitch;
-    }
-
-    // Navegación por giroscopio (normalizado automáticamente para posición horizontal o vertical)
+    // Navegación de vuelo gobernada exclusivamente por giroscopio del móvil
     const gy = dev.ch['ang.g'];
     const gx = dev.ch['ang.b'];
     if (gy != null && gx != null) {
       const gyroRoll = clamp(gy * 0.95, -50, 50);
       const gyroPitch = clamp((gx - 35) * 0.85, -40, 40);
-      if (isDown) {
-        targetRoll += gyroRoll * 0.45;
-        targetPitch += gyroPitch * 0.45;
-      } else {
-        targetRoll += gyroRoll;
-        targetPitch += gyroPitch;
-      }
+      targetRoll += gyroRoll;
+      targetPitch += gyroPitch;
     }
 
     // Zoom táctil desde el teléfono con 2 dedos (pellizco)
@@ -519,10 +546,18 @@ function update3DWorld(now) {
         const sy = pol.ty * partCv.height;
         const cx = lifeCv.width / 2;
         const cy = lifeCv.height / 2;
-        const wx = cx + (sx - partCv.width / 2) / P.zoom;
-        const wy = cy + (sy - partCv.height / 2) / P.zoom;
-        swarmDepositPollen(wx, wy, pol.td > 70, 1.2);
+        const wx = cx + (sx - partCv.width / 2) / P.zoom + curCamRoll * 6;
+        const wy = cy + (sy - partCv.height / 2) / P.zoom + curCamPitch * 4.5;
+        swarmDepositPollen(wx, wy, pol.td > 70, 1.25);
       }
+    }
+    // Soporte para pruebas de escritorio con el ratón
+    if (mouseIsDown) {
+      const cx = lifeCv.width / 2;
+      const cy = lifeCv.height / 2;
+      const wx = cx + (mouseCoords.x * partCv.width - partCv.width / 2) / P.zoom;
+      const wy = cy + (mouseCoords.y * partCv.height - partCv.height / 2) / P.zoom;
+      swarmDepositPollen(wx, wy, isRightClick, 1.25);
     }
   }
 
@@ -787,25 +822,34 @@ stage.addEventListener('wheel', e => {
   });
 }, { passive: false });
 
-stage.addEventListener('pointerdown', () => {
+stage.addEventListener('pointerdown', e => {
   ensureAudio().catch(() => {});
+  if (e.target.closest('#viewSwitcher') || e.target.closest('#climaxModal') || e.target.closest('button')) return;
+  mouseIsDown = true;
+  isRightClick = (e.button === 2);
+  const r = stage.getBoundingClientRect();
+  mouseCoords.x = clamp((e.clientX - r.left) / (r.width || 1));
+  mouseCoords.y = clamp((e.clientY - r.top) / (r.height || 1));
+  const cx = lifeCv.width / 2;
+  const cy = lifeCv.height / 2;
+  const wx = cx + (mouseCoords.x * partCv.width - partCv.width / 2) / P.zoom;
+  const wy = cy + (mouseCoords.y * partCv.height - partCv.height / 2) / P.zoom;
+  swarmDepositPollen(wx, wy, isRightClick, 1.25);
 });
 
-stage.addEventListener('pointermove', () => {
-  // El ratón de la laptop solo interactúa con la plataforma (vistas, zoom con rueda, botones)
-  // La fecundación y el timón de vuelo quedan exclusivamente gobernados por los teléfonos conectados
+stage.addEventListener('pointermove', e => {
+  if (!mouseIsDown) return;
+  const r = stage.getBoundingClientRect();
+  mouseCoords.x = clamp((e.clientX - r.left) / (r.width || 1));
+  mouseCoords.y = clamp((e.clientY - r.top) / (r.height || 1));
 });
-
-stage.addEventListener('pointerleave', () => {});
-stage.addEventListener('pointerup', () => {});
 
 stage.addEventListener('pointerleave', () => {
   mouseInside = false;
-  mouseCamRoll = 0;
-  mouseCamPitch = 0;
+  mouseIsDown = false;
 });
 
-stage.addEventListener('pointerup', e => {
+stage.addEventListener('pointerup', () => {
   if (mouseIsDown) {
     mouseIsDown = false;
     isRightClick = false;
@@ -831,7 +875,7 @@ let touchDownTime = 0, lastMoveTime = 0;
 function processGestures() {
   const pollinators = getActivePollinators();
   const touchingPollinators = pollinators.filter(p => p.isDown);
-  const activeCount = touchingPollinators.length;
+  const activeCount = touchingPollinators.length + (mouseIsDown ? 1 : 0);
   const now = performance.now();
 
   if (activeCount > 0 && !isClimax) {
@@ -842,11 +886,11 @@ function processGestures() {
       if (A.ctx) setGain('palpito', 1.0, 0.04);
     }
 
-    let sumFingers = 0;
-    let anyNecrosis = false;
+    let sumFingers = mouseIsDown ? 1 : 0;
+    let anyNecrosis = isRightClick;
 
     // Calcular velocidad para detectar desplazamiento fluido vs rigidez en un punto
-    const p1 = touchingPollinators[0];
+    const p1 = touchingPollinators[0] || { tx: mouseCoords.x, ty: mouseCoords.y, tn: 1, td: isRightClick ? 90 : 45 };
     const dPos = Math.hypot(p1.tx - touchPrevX, p1.ty - touchPrevY);
     touchSpeed = touchSpeed * 0.75 + (dPos / (1 / 60)) * 0.25;
     touchPrevX = p1.tx; touchPrevY = p1.ty;

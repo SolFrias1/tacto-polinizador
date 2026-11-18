@@ -145,23 +145,22 @@ section.interactive-arena {
   margin-left: -1200px; margin-top: -1200px;
   transform-origin: 50% 50%; transform: rotateX(20deg) translateZ(-10px); 
   transform-style: preserve-3d; will-change: transform; 
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 54%, rgba(0,0,0,0.85) 75%, transparent 98%);
-  mask-image: radial-gradient(ellipse at 50% 50%, black 54%, rgba(0,0,0,0.85) 75%, transparent 98%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 58%, rgba(0,0,0,0.85) 78%, transparent 98%);
+  mask-image: radial-gradient(ellipse at 50% 50%, black 58%, rgba(0,0,0,0.85) 78%, transparent 98%);
 }
 
 #meadowBase, #meadowLife { 
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; 
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block; 
 }
 
 #meadowBase { 
-  /* Campo durmiente / muerto poético: sutil, atenuado y sepia para que florezca con el tacto */
-  filter: grayscale(80%) contrast(96%) brightness(36%) sepia(28%); 
+  /* Campo durmiente / seco poético: sutil, atenuado y sepia para que florezca con el tacto */
+  filter: grayscale(85%) contrast(92%) brightness(34%) sepia(30%); 
   opacity: 0.95; 
 }
 
 #meadowLife { 
   opacity: 1; will-change: filter, transform; 
-  mix-blend-mode: screen;
 }
 
 /* Glitch visual momentáneo y parpadeo de contraste (Falla de traducción / Point 8) */

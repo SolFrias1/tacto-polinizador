@@ -7,11 +7,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Tacto · control remoto</title>
-<link rel="stylesheet" href="ui.css?v=20261116_2215">
+<link rel="stylesheet" href="ui.css?v=20261116_2315">
 <style>
-  * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
-  html, body { font-size: 16px; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
-  body { display: flex; flex-direction: column; gap: var(--sp-3); padding: max(var(--sp-3), env(safe-area-inset-top)) max(var(--sp-3), env(safe-area-inset-right)) max(var(--sp-3), env(safe-area-inset-bottom)) max(var(--sp-3), env(safe-area-inset-left)); }
+  * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
+  html, body { 
+    height: 100%; min-height: 100dvh; margin: 0; padding: 0;
+    font-size: 16px; overscroll-behavior: none; user-select: none; -webkit-user-select: none; 
+  }
+  body { 
+    display: flex; flex-direction: column; gap: var(--sp-2); 
+    padding: max(var(--sp-2), env(safe-area-inset-top)) max(var(--sp-3), env(safe-area-inset-right)) max(var(--sp-2), env(safe-area-inset-bottom)) max(var(--sp-3), env(safe-area-inset-left)); 
+    background: radial-gradient(circle at 50% 15%, #08120b 0%, #030604 75%);
+  }
   input { width: 100%; min-height: 48px; padding: 12px 14px; border-radius: var(--r-m); background: var(--bg-2); user-select: text; -webkit-user-select: text; font-size: 16px; /* 16px evita el zoom de iOS */ }
   label { font-size: 13px; font-weight: 500; }
   button { min-height: 48px; border-radius: var(--r-m); padding: 12px; font-weight: 600; }
@@ -19,18 +26,42 @@
   #join .field { display: flex; flex-direction: column; gap: 6px; }
   #join .note { color: var(--mut); font-size: 13px; line-height: 1.5; }
   #go { margin-top: var(--sp-2); font-size: 17px; }
-  #run { display: none; flex: 1; min-height: 0; flex-direction: column; gap: var(--sp-3); }
+  #run { display: none; flex: 1; min-height: 0; flex-direction: column; gap: var(--sp-2); }
   #bar { display: flex; justify-content: space-between; align-items: center; color: var(--mut); font-size: 13px; gap: var(--sp-2); padding: 0 var(--sp-1); }
   #bar { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; }
   #st { font-weight: 600; } #st.on { color: var(--ok); } #st.warn { color: var(--warn); }
-  #surface { position: relative; flex: 1; min-height: 0; border-radius: var(--r-l); border: 1px solid var(--line-2); overflow: hidden; touch-action: none;
-             background: radial-gradient(circle at 50% 40%, #2a1e46, #0d0915 72%); }
+  
+  /* Botón gigante táctil de fecundación */
+  .fecundar-btn {
+    width: 100%; min-height: 68px; padding: 12px 16px; border-radius: var(--r-m);
+    border: 2px solid rgba(163, 230, 53, 0.45);
+    background: linear-gradient(135deg, rgba(163,230,53,0.16), rgba(101,163,13,0.24));
+    color: #f7fee7; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35), inset 0 0 14px rgba(163,230,53,0.12);
+    transition: all 120ms ease; user-select: none; -webkit-user-select: none;
+    touch-action: none;
+  }
+  .fecundar-btn .btn-icon { font-size: 24px; line-height: 1; }
+  .fecundar-btn .btn-title { font-size: 15px; font-weight: 800; letter-spacing: 0.04em; color: #bef264; }
+  .fecundar-btn .btn-sub { font-size: 11px; color: #a3e635; opacity: 0.85; }
+  .fecundar-btn:active, .fecundar-btn.fecundando {
+    background: linear-gradient(135deg, #a3e635, #65a30d);
+    color: #051004; border-color: #f7fee7;
+    transform: scale(0.98);
+    box-shadow: 0 0 28px rgba(163,230,53,0.65), inset 0 0 16px rgba(255,255,255,0.4);
+  }
+  .fecundar-btn.fecundando .btn-title { color: #051004; }
+  .fecundar-btn.fecundando .btn-sub { color: #1e3a0a; font-weight: 600; }
+
+  #surface { position: relative; flex: 1; min-height: 180px; border-radius: var(--r-l); border: 1px solid var(--line-2); overflow: hidden; touch-action: none;
+             background: radial-gradient(circle at 50% 40%, #152217, #070e08 72%); }
   #cv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #hud { position: absolute; left: 12px; top: 10px; right: 12px; font: 12px/1.5 var(--mono); color: #d8d2ee; pointer-events: none; white-space: pre; text-shadow: 0 1px 2px #000; overflow: hidden; }
-  #hint { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mut); pointer-events: none; text-align: center; padding: 0 32px; font-size: 15px; }
-  #motionBar { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; font-size: 13px; color: var(--mut); margin-top: 4px; }
+  #hint { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mut); pointer-events: none; text-align: center; padding: 0 24px; font-size: 14px; }
+  #motionBar { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 12px; color: var(--mut); margin-top: 2px; }
   .msg { font-size: 13px; }
-  @media (max-height: 520px) { #hud { font-size: 11px; } }
+  @media (max-height: 520px) { #hud { font-size: 11px; } .fecundar-btn { min-height: 54px; } }
 </style>
 </head>
 <body>
@@ -54,10 +85,25 @@
 
   <div id="run">
     <div id="bar"><span id="st" role="status" aria-live="polite">Conectando…</span><span id="info"></span></div>
+    
     <div style="background: rgba(163,230,53,0.12); border: 1px solid rgba(163,230,53,0.3); border-radius: var(--r-s); padding: 8px 12px; font-size: 12px; color: #d9f99d; text-align: center;">
-      📱 <b>Inclina</b> el teléfono en el aire para volar · <b>Toca</b> la pantalla para fecundar flores
+      📱 <b>Inclina</b> el teléfono en el aire para volar · <b>Mantén el botón</b> o toca para fecundar flores
     </div>
-    <div id="surface"><canvas id="cv" aria-hidden="true"></canvas><div id="hud" aria-hidden="true"></div><div id="hint">🌿 Mueve el teléfono en el aire para dirigir el vuelo 3D<br><br>✨ Toca y arrastra aquí para fecundar el prado</div></div>
+
+    <!-- BOTÓN GIGANTE TÁCTIL DE FECUNDACIÓN -->
+    <button id="fecundarBtn" class="fecundar-btn" type="button" aria-label="Mantener presionado para fecundar flores en el prado">
+      <span class="btn-icon">🌸</span>
+      <span class="btn-title">MANTÉN PRESIONADO PARA FECUNDAR</span>
+      <span class="btn-sub">✨ Fecunda el prado y libera el enjambre de polen</span>
+    </button>
+
+    <!-- SUPERFICIE DE VUELO Y POLINIZACIÓN TÁCTIL -->
+    <div id="surface">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div id="hud" aria-hidden="true"></div>
+      <div id="hint">🌿 Desliza aquí con 1 o 2 dedos<br><br>✨ La abeja fecundará flores donde toques</div>
+    </div>
+
     <div id="motionBar">
       <span>🧭 Prótesis de vuelo</span>
       <b id="v-motion" style="color:var(--neo);">Tacto & Giroscopio Activos</b>
@@ -65,8 +111,8 @@
     <div class="msg" id="err2" role="alert"></div>
   </div>
 
-<script src="config.js?v=20261116_2215"></script>
-<script src="tacto.js?v=20261116_2215"></script>
+<script src="config.js?v=20261116_2315"></script>
+<script src="tacto.js?v=20261116_2315"></script>
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
@@ -168,13 +214,21 @@ function slotFor(id) {
 }
 function onTouch(e) {
   e.preventDefault();
-  const r = surf.getBoundingClientRect(), list = Array.from(e.targetTouches), ids = new Set(list.map(t => t.identifier));
+  const r = surf.getBoundingClientRect();
+  const list = Array.from(e.touches && e.touches.length ? e.touches : (e.targetTouches || []));
+  const ids = new Set(list.map(t => t.identifier));
   for (const id of [...slots.keys()]) if (!ids.has(id)) slots.delete(id);
   const p = [];
   for (const t of list) {
     const i = slotFor(t.identifier); if (!i) continue;
     const rx = t.radiusX ?? t.webkitRadiusX ?? 0, ry = t.radiusY ?? t.webkitRadiusY ?? 0;
-    p.push({ i, x: clamp((t.clientX - r.left) / r.width), y: clamp((t.clientY - r.top) / r.height), f: t.force ?? t.webkitForce ?? 0, d: rx + ry }); // diámetro medio = rx + ry
+    p.push({ 
+      i, 
+      x: clamp((t.clientX - r.left) / (r.width || 1)), 
+      y: clamp((t.clientY - r.top) / (r.height || 1)), 
+      f: t.force ?? t.webkitForce ?? 0.8, 
+      d: Math.max(32, rx + ry) 
+    });
   }
   setTouches(p.sort((a, b) => a.i - b.i), r);
 }
@@ -182,17 +236,82 @@ function onTouch(e) {
 ['gesturestart', 'gesturechange'].forEach(n => document.addEventListener(n, e => e.preventDefault()));
 surf.addEventListener('contextmenu', e => e.preventDefault());
 
-// Ratón o lápiz (para probar desde un computador)
+// Ratón o lápiz sobre la superficie del teléfono
 const ptrs = new Map();
 function fromPtrs() {
   const r = surf.getBoundingClientRect(), p = []; let i = 0;
-  for (const e of ptrs.values()) { if (++i > 5) break; p.push({ i, x: clamp((e.clientX - r.left) / r.width), y: clamp((e.clientY - r.top) / r.height), f: e.pressure || 0, d: Math.max(e.width || 0, e.height || 0) }); }
+  for (const e of ptrs.values()) { 
+    if (++i > 5) break; 
+    p.push({ 
+      i, 
+      x: clamp((e.clientX - r.left) / (r.width || 1)), 
+      y: clamp((e.clientY - r.top) / (r.height || 1)), 
+      f: e.pressure || 0.8, 
+      d: Math.max(35, Math.max(e.width || 0, e.height || 0)) 
+    }); 
+  }
   setTouches(p, r);
 }
 surf.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') return; surf.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); fromPtrs(); });
 surf.addEventListener('pointermove', e => { if (ptrs.has(e.pointerId)) { ptrs.set(e.pointerId, e); fromPtrs(); } });
 const pend = e => { if (ptrs.delete(e.pointerId)) fromPtrs(); };
 surf.addEventListener('pointerup', pend); surf.addEventListener('pointercancel', pend);
+
+// ================= BOTÓN GIGANTE TÁCTIL DE FECUNDACIÓN =================
+const fecundarBtn = $('#fecundarBtn');
+let isBtnFecundando = false;
+let fecundarInterval = null;
+let simulatedBtnTouchAngle = 0;
+
+function startFecundarBtn(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (isBtnFecundando) return;
+  isBtnFecundando = true;
+  fecundarBtn.classList.add('fecundando');
+  const titleEl = fecundarBtn.querySelector('.btn-title');
+  const iconEl = fecundarBtn.querySelector('.btn-icon');
+  const subEl = fecundarBtn.querySelector('.btn-sub');
+  if (titleEl) titleEl.textContent = '✨ FECUNDANDO EL PRADO...';
+  if (iconEl) iconEl.textContent = '✨';
+  if (subEl) subEl.textContent = '🌸 Polinizando y haciendo florecer el campo';
+
+  if (navigator.vibrate) try { navigator.vibrate([35, 45]); } catch {}
+
+  const r = surf.getBoundingClientRect();
+  // Primer pulso inmediato
+  setTouches([{ i: 1, x: 0.5, y: 0.5, f: 0.88, d: 48 }], r);
+
+  clearInterval(fecundarInterval);
+  fecundarInterval = setInterval(() => {
+    if (!isBtnFecundando) return;
+    simulatedBtnTouchAngle += 0.15;
+    // Órbita sutil para fecundar en estela orgánica alrededor del cursor
+    const jx = 0.5 + Math.cos(simulatedBtnTouchAngle) * 0.08;
+    const jy = 0.5 + Math.sin(simulatedBtnTouchAngle) * 0.08;
+    setTouches([{ i: 1, x: r3(jx), y: r3(jy), f: 0.88, d: 48 }], surf.getBoundingClientRect());
+  }, 40);
+}
+
+function stopFecundarBtn(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (!isBtnFecundando) return;
+  isBtnFecundando = false;
+  clearInterval(fecundarInterval);
+  fecundarBtn.classList.remove('fecundando');
+  const titleEl = fecundarBtn.querySelector('.btn-title');
+  const iconEl = fecundarBtn.querySelector('.btn-icon');
+  const subEl = fecundarBtn.querySelector('.btn-sub');
+  if (titleEl) titleEl.textContent = 'MANTÉN PRESIONADO PARA FECUNDAR';
+  if (iconEl) iconEl.textContent = '🌸';
+  if (subEl) subEl.textContent = '✨ Fecunda el prado y libera el enjambre de polen';
+
+  if (cur.p.length <= 1) {
+    setTouches([], surf.getBoundingClientRect());
+  }
+}
+
+['pointerdown', 'touchstart', 'mousedown'].forEach(ev => fecundarBtn.addEventListener(ev, startFecundarBtn, { passive: false }));
+['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(ev => fecundarBtn.addEventListener(ev, stopFecundarBtn, { passive: false }));
 
 // Dibujo y panel de datos
 function draw() {
