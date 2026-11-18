@@ -198,12 +198,28 @@ window.addEventListener('resize', syncCanvasSizes);
 const TILE_W = 800;
 const TILE_H = 300; // Aspect ratio exacto: 800 / 300 = 2.6667 (idéntico a flori.png: 2048 / 768)
 
+const fullColorCv = document.createElement('canvas');
+fullColorCv.width = baseCv.width;
+fullColorCv.height = baseCv.height;
+const fgx = fullColorCv.getContext('2d');
+
+// Pincel difuminado reutilizable para colorear el campo con bordes suaves orgánicos
+const patchCv = document.createElement('canvas');
+patchCv.width = 256;
+patchCv.height = 256;
+const pgx2 = patchCv.getContext('2d');
+
 const floriImg = new Image();
 floriImg.crossOrigin = 'anonymous';
 floriImg.src = 'imagen/flori.png';
 floriImg.onload = () => {
   renderInfiniteMeadowBase();
+  renderFullColorMeadow();
 };
+if (floriImg.complete) {
+  renderInfiniteMeadowBase();
+  renderFullColorMeadow();
+}
 
 function renderInfiniteMeadowBase() {
   if (!floriImg.complete) return;
@@ -238,6 +254,31 @@ function renderInfiniteMeadowBase() {
   grad.addColorStop(1, 'rgba(3, 8, 5, 0.75)');
   bgx.fillStyle = grad;
   bgx.fillRect(0, 0, baseCv.width, baseCv.height);
+}
+
+// Renderiza el prado EXACTO a todo color (fuente pura para colorear al tocar)
+function renderFullColorMeadow() {
+  if (!floriImg.complete) return;
+  fgx.clearRect(0, 0, fullColorCv.width, fullColorCv.height);
+
+  const cols = Math.ceil(fullColorCv.width / TILE_W);
+  const rows = Math.ceil(fullColorCv.height / TILE_H);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      fgx.save();
+      const x = c * TILE_W;
+      const y = r * TILE_H;
+
+      const flipX = (c % 2 === 1);
+      const flipY = (r % 2 === 1);
+
+      fgx.translate(flipX ? x + TILE_W : x, flipY ? y + TILE_H : y);
+      fgx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+      fgx.drawImage(floriImg, 0, 0, TILE_W, TILE_H);
+      fgx.restore();
+    }
+  }
 }
 
 // Reiniciar campo
@@ -325,11 +366,11 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
   if (!floriImg.complete) return;
   
   lgx.save();
-  // Radio reducido y delicado para control visual fino
-  const rad = (16 + Math.random() * 10) * radMult;
+  // Radio delicado y proporcionado para control visual fino
+  const rad = (18 + Math.random() * 10) * radMult;
 
   if (isNecrosis) {
-    // 6. touch.d (yema plana / presión): Necrosis por sobrecarga
+    // 6. touch.d (yema plana / presión): Necrosis por sobrecarga (asfixia y oscurecimiento)
     lgx.globalCompositeOperation = 'source-over';
     const grad = lgx.createRadialGradient(targetWorldX, targetWorldY, 2, targetWorldX, targetWorldY, rad * 1.5);
     grad.addColorStop(0, 'rgba(10, 3, 2, 0.96)');
@@ -340,53 +381,56 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
     lgx.arc(targetWorldX, targetWorldY, rad * 1.5, 0, Math.PI * 2);
     lgx.fill();
   } else {
-    // 2 & 4. Fecundación Viva sobre el prado durmiente
-    lgx.globalCompositeOperation = 'source-over';
+    // 2 & 4. Fecundación Viva: COLOREAR Y REANIMAR el campo durmiente exactamente en su lugar
+    const size = Math.ceil(rad * 2);
+    if (patchCv.width < size) { patchCv.width = size; patchCv.height = size; }
 
-    // A) Halo bioluminiscente de polen en el punto de contacto
-    const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.6);
-    const flowerHue = (P.colorExotico + Math.random() * 35) % 360;
-    halo.addColorStop(0, `hsla(${flowerHue}, 100%, 75%, 0.85)`);
-    halo.addColorStop(0.45, `hsla(${(flowerHue + 40) % 360}, 95%, 55%, 0.45)`);
-    halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    lgx.fillStyle = halo;
-    lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad * 1.6, 0, Math.PI * 2);
-    lgx.fill();
+    pgx2.clearRect(0, 0, size, size);
 
-    // B) Estela de flores vivas y nítidas que brotan sobre el campo muerto
-    lgx.save();
-    lgx.beginPath();
-    lgx.arc(targetWorldX, targetWorldY, rad, 0, Math.PI * 2);
-    lgx.clip();
+    // Calcular límites para extraer con total seguridad del mosaico a color
+    const sx = Math.max(0, targetWorldX - rad);
+    const sy = Math.max(0, targetWorldY - rad);
+    const ex = Math.min(fullColorCv.width, targetWorldX + rad);
+    const ey = Math.min(fullColorCv.height, targetWorldY + rad);
+    const sw = ex - sx;
+    const sh = ey - sy;
 
-    // Calcular posición correspondiente dentro del mosaico botánico simétrico
-    const col = Math.floor(targetWorldX / TILE_W);
-    const row = Math.floor(targetWorldY / TILE_H);
-    const localX = ((targetWorldX % TILE_W) + TILE_W) % TILE_W;
-    const localY = ((targetWorldY % TILE_H) + TILE_H) % TILE_H;
-    const flipX = (col % 2 === 1);
-    const flipY = (row % 2 === 1);
+    if (sw > 0 && sh > 0) {
+      const dx = sx - (targetWorldX - rad);
+      const dy = sy - (targetWorldY - rad);
 
-    const imgX = flipX ? (TILE_W - localX) : localX;
-    const imgY = flipY ? (TILE_H - localY) : localY;
+      // 1. Extraer la porción exacta a todo color del mosaico (alineada píxel por píxel con el fondo)
+      pgx2.globalCompositeOperation = 'source-over';
+      pgx2.drawImage(fullColorCv, sx, sy, sw, sh, dx, dy, sw, sh);
 
-    const sx = clamp((imgX / TILE_W) * floriImg.width - rad, 0, floriImg.width - rad * 2);
-    const sy = clamp((imgY / TILE_H) * floriImg.height - rad, 0, floriImg.height - rad * 2);
+      // 2. Aplicar máscara radial difuminada para que el florecimiento sea suave y sin bordes duros
+      pgx2.globalCompositeOperation = 'destination-in';
+      const grad = pgx2.createRadialGradient(rad, rad, 0, rad, rad, rad);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+      grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.85)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      pgx2.fillStyle = grad;
+      pgx2.beginPath();
+      pgx2.arc(rad, rad, rad, 0, Math.PI * 2);
+      pgx2.fill();
 
-    lgx.drawImage(floriImg, sx, sy, rad * 2, rad * 2, targetWorldX - rad, targetWorldY - rad, rad * 2, rad * 2);
+      // 3. Estampar el florecimiento vivo sobre el lienzo de vida exactamente en sus coordenadas
+      lgx.globalCompositeOperation = 'source-over';
+      lgx.drawImage(patchCv, 0, 0, size, size, targetWorldX - rad, targetWorldY - rad, size, size);
 
-    // C) Chispa de luz y polen floral dorado sobre los pétalos vivos
-    const florShine = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad);
-    florShine.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-    florShine.addColorStop(0.5, 'rgba(230, 255, 61, 0.2)');
-    florShine.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    lgx.fillStyle = florShine;
-    lgx.fill();
+      // 4. Sutil halo bioluminiscente de polen en el núcleo de fecundación
+      lgx.globalCompositeOperation = 'screen';
+      const halo = lgx.createRadialGradient(targetWorldX, targetWorldY, 0, targetWorldX, targetWorldY, rad * 1.35);
+      halo.addColorStop(0, 'rgba(255, 248, 190, 0.35)');
+      halo.addColorStop(0.5, 'rgba(230, 255, 61, 0.12)');
+      halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      lgx.fillStyle = halo;
+      lgx.beginPath();
+      lgx.arc(targetWorldX, targetWorldY, rad * 1.35, 0, Math.PI * 2);
+      lgx.fill();
 
-    lgx.restore(); // Terminar clip
-
-    totalBlooms++;
+      totalBlooms++;
+    }
   }
   lgx.restore();
 
