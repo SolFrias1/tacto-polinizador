@@ -132,6 +132,7 @@ section.interactive-arena {
   border-radius: var(--r-l); overflow: hidden; border: 1px solid var(--line-2); 
   perspective: 900px; perspective-origin: 50% 40%; touch-action: none; 
   box-shadow: 0 24px 60px rgba(0,0,0,0.85), 0 0 45px rgba(74,222,128,0.08);
+  transition: background 350ms ease, box-shadow 350ms ease;
 }
 
 #flightWorld { 
@@ -151,6 +152,7 @@ section.interactive-arena {
 
 #meadowBase, #meadowLife { 
   position: absolute; inset: 0; width: 100%; height: 100%; display: block; 
+  transition: filter 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 #meadowBase { 

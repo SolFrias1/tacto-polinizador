@@ -120,8 +120,8 @@
     <div class="msg" id="err2" role="alert"></div>
   </div>
 
-<script src="config.js?v=20261118_1340"></script>
-<script src="tacto.js?v=20261118_1340"></script>
+<script src="config.js?v=20261118_1355"></script>
+<script src="tacto.js?v=20261118_1355"></script>
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
@@ -252,28 +252,46 @@ const zoomOutPill = $('#zoomOutPill');
 const zoomNormalPill = $('#zoomNormalPill');
 const zoomInPill = $('#zoomInPill');
 
+function triggerMobileZoom(x1, x2, label, icon) {
+  let count = 0;
+  const pill = $('#touchStatePill');
+  const iconEl = $('#touchStateIcon');
+  const textEl = $('#touchStateText');
+  if (pill && textEl) {
+    pill.style.background = 'rgba(56,189,248,0.22)';
+    pill.style.borderColor = '#38bdf8';
+    if (iconEl) iconEl.textContent = icon;
+    textEl.textContent = label;
+    textEl.style.color = '#7dd3fc';
+  }
+  const iv = setInterval(() => {
+    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: x1, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: x2, y: 0.5, f: 0.8, d: 30 }] }, 1);
+    count++;
+    if (count >= 6) {
+      clearInterval(iv);
+      setTimeout(() => {
+        if (cur.n === 0) {
+          pub('touch', { t: Date.now(), n: 0, ar: 1, p: [] }, 1);
+          updateTouchStateUI(0);
+        }
+      }, 100);
+    }
+  }, 45);
+}
+
 if (zoomOutPill) {
   zoomOutPill.onclick = () => {
-    // Distancia pequeña = Zoom Out (Panorámica ~0.72)
-    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: 0.47, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: 0.53, y: 0.5, f: 0.8, d: 30 }] }, 1);
-    updateTouchStateUI(2);
-    setTimeout(() => { if (cur.n === 0) updateTouchStateUI(0); }, 1500);
+    triggerMobileZoom(0.48, 0.52, '🔍 ZOOM OUT: Panorámica (Color Normal)', '🔭');
   };
 }
 if (zoomNormalPill) {
   zoomNormalPill.onclick = () => {
-    // Distancia media = FPV Normal (~1.15)
-    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: 0.38, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: 0.62, y: 0.5, f: 0.8, d: 30 }] }, 1);
-    updateTouchStateUI(2);
-    setTimeout(() => { if (cur.n === 0) updateTouchStateUI(0); }, 1500);
+    triggerMobileZoom(0.38, 0.62, '🔍 ZOOM NORMAL: Vuelo FPV (Color Natural)', '🐝');
   };
 }
 if (zoomInPill) {
   zoomInPill.onclick = () => {
-    // Distancia grande = Zoom In (Macro UV ~2.40)
-    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: 0.15, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: 0.85, y: 0.5, f: 0.8, d: 30 }] }, 1);
-    updateTouchStateUI(2);
-    setTimeout(() => { if (cur.n === 0) updateTouchStateUI(0); }, 1500);
+    triggerMobileZoom(0.12, 0.88, '🔍 ZOOM IN: Espectro UV (Abeja)', '👁️');
   };
 }
 
