@@ -325,7 +325,8 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
   if (!floriImg.complete) return;
   
   lgx.save();
-  const rad = (38 + Math.random() * 26) * radMult;
+  // Radio reducido y delicado para control visual fino
+  const rad = (16 + Math.random() * 10) * radMult;
 
   if (isNecrosis) {
     // 6. touch.d (yema plana / presión): Necrosis por sobrecarga
@@ -389,7 +390,7 @@ function swarmDepositPollen(targetWorldX, targetWorldY, isNecrosis, radMult = 1.
   }
   lgx.restore();
 
-  const coverage = Math.min(100, Math.round((totalBlooms / 350) * 100));
+  const coverage = Math.min(100, Math.round((totalBlooms / 700) * 100));
   $('#statCoverage').textContent = coverage + '%';
   if (coverage >= 80 && !isClimax) {
     triggerClimax();
@@ -430,6 +431,8 @@ function getActivePollinators() {
 
 // ============================ BUCLE 3D Y PERSPECTIVA ==================
 let curCamRoll = 0, curCamPitch = 0;
+let lastPhonePollenTime = 0, lastPhonePollenX = 0, lastPhonePollenY = 0;
+let lastMousePollenTime = 0, lastMousePollenX = 0, lastMousePollenY = 0;
 
 function update3DWorld(now) {
   syncCanvasSizes();
@@ -455,10 +458,15 @@ function update3DWorld(now) {
       targetPitch += gyroPitch;
     }
 
-    // Zoom táctil desde el teléfono con 2 dedos (pellizco)
+    // Zoom táctil desde el teléfono con 2 dedos (Pellizco In / Out bidireccional calibrado)
     const td = dev.ch['touch.dist'];
-    if (td != null && (dev.ch['touch.n'] || 0) >= 2) {
-      P.zoom = clamp(0.7 + td * 1.6, 0.65, 3.2);
+    if (td != null && (dev.ch['touch.n'] || 0) === 2) {
+      // td <= 0.12 (juntos) -> Panorámica / Zoom Out (0.72)
+      // td ~ 0.28 (normal)  -> Vuelo FPV (1.15)
+      // td >= 0.50 (abierto)-> Zoom In / Macro UV (2.35)
+      const normDist = clamp((td - 0.08) / 0.42, 0, 1);
+      const targetZoom = 0.70 + Math.pow(normDist, 1.25) * 1.85;
+      P.zoom += (targetZoom - P.zoom) * 0.18;
     }
   }
 
@@ -538,7 +546,7 @@ function update3DWorld(now) {
 
   const isSwarming = pollinators.length > 0 || isClimax;
 
-  // Fecundación continua directa por teléfonos móviles tocando la pantalla
+  // Fecundación continua directa por teléfonos móviles tocando la pantalla (ritmo suave y controlado)
   if (!isClimax) {
     for (const pol of pollinators) {
       if (pol.isDown && pol.id !== 'raton') {
@@ -546,9 +554,17 @@ function update3DWorld(now) {
         const sy = pol.ty * partCv.height;
         const cx = lifeCv.width / 2;
         const cy = lifeCv.height / 2;
-        const wx = cx + (sx - partCv.width / 2) / P.zoom + curCamRoll * 6;
-        const wy = cy + (sy - partCv.height / 2) / P.zoom + curCamPitch * 4.5;
-        swarmDepositPollen(wx, wy, pol.td > 70, 1.25);
+        // Posición en el plano 3D con desplazamiento cinemático de vuelo
+        const wx = cx + (sx - partCv.width / 2) / P.zoom + curCamRoll * 4;
+        const wy = cy + (sy - partCv.height / 2) / P.zoom + curCamPitch * 3;
+        
+        // Ritmo controlado: máximo cada 85ms o tras recorrer al menos 12px para evitar descontrol
+        if (now - lastPhonePollenTime > 85 || Math.hypot(wx - lastPhonePollenX, wy - lastPhonePollenY) > 12) {
+          lastPhonePollenTime = now;
+          lastPhonePollenX = wx;
+          lastPhonePollenY = wy;
+          swarmDepositPollen(wx, wy, pol.td > 70, 1.0);
+        }
       }
     }
     // Soporte para pruebas de escritorio con el ratón
@@ -557,7 +573,12 @@ function update3DWorld(now) {
       const cy = lifeCv.height / 2;
       const wx = cx + (mouseCoords.x * partCv.width - partCv.width / 2) / P.zoom;
       const wy = cy + (mouseCoords.y * partCv.height - partCv.height / 2) / P.zoom;
-      swarmDepositPollen(wx, wy, isRightClick, 1.25);
+      if (now - lastMousePollenTime > 85 || Math.hypot(wx - lastMousePollenX, wy - lastMousePollenY) > 12) {
+        lastMousePollenTime = now;
+        lastMousePollenX = wx;
+        lastMousePollenY = wy;
+        swarmDepositPollen(wx, wy, isRightClick, 1.0);
+      }
     }
   }
 
@@ -599,14 +620,8 @@ function update3DWorld(now) {
       b.vx *= 0.94;
       b.vy *= 0.94;
 
-      // Depositar polen si el polinizador está presionando y la abeja pasa cerca
-      if (targetIsDown && dist < 130 && Math.random() > 0.25 && !isClimax) {
-        const isNecrotic = P.necrosis > 0.6 || isRightClick;
-        const cx = lifeCv.width / 2;
-        const cy = lifeCv.height / 2;
-        const wx = cx + (b.x - partCv.width / 2) / P.zoom;
-        const wy = cy + (b.y - partCv.height / 2) / P.zoom;
-        swarmDepositPollen(wx, wy, isNecrotic, 0.9);
+      // Cargar la abeja de polen luminoso al danzar cerca del foco (sin inundar el prado)
+      if (targetIsDown && dist < 120) {
         b.charge = 1;
       }
     } else {
@@ -868,7 +883,7 @@ window.addEventListener('keydown', e => {
 });
 
 // ============================ LÓGICA COLECTIVA DE GESTOS ==============
-let lastTouchCount = 0, alarmFired = false;
+let lastTouchCount = 0, lastSumFingers = 0, alarmFired = false;
 let touchPrevX = 0.5, touchPrevY = 0.5, touchSpeed = 0;
 let touchDownTime = 0, lastMoveTime = 0;
 
@@ -877,6 +892,7 @@ function processGestures() {
   const touchingPollinators = pollinators.filter(p => p.isDown);
   const activeCount = touchingPollinators.length + (mouseIsDown ? 1 : 0);
   const now = performance.now();
+  let currentSumFingers = 0;
 
   if (activeCount > 0 && !isClimax) {
     if (lastTouchCount === 0) {
@@ -906,6 +922,7 @@ function processGestures() {
       sumFingers += p.tn;
       if (p.td > 78) anyNecrosis = true;
     }
+    currentSumFingers = sumFingers;
 
     const isStress = anyNecrosis || sumFingers >= 4 || isRigid;
 
@@ -961,15 +978,28 @@ function processGestures() {
     }
 
     // 8. touch.n >= 3: Falla de traducción / robot.mp3 + glitch visual de contraste
-    if (sumFingers >= 3 && lastTouchCount < 3) {
-      playTrigger('robot');
-      const wrap = $('#stageWrap');
-      if (wrap) {
-        wrap.classList.add('glitch-active');
-        setTimeout(() => wrap.classList.remove('glitch-active'), 320);
+    if (sumFingers >= 3) {
+      if (lastSumFingers < 3) {
+        playTrigger('robot');
+        const wrap = $('#stageWrap');
+        if (wrap) {
+          wrap.classList.add('glitch-active');
+          setTimeout(() => wrap.classList.remove('glitch-active'), 650);
+        }
+        const banner = $('#glitchBanner');
+        if (banner) {
+          banner.classList.add('active');
+          setTimeout(() => banner.classList.remove('active'), 1400);
+        }
       }
+      $('#statTension').textContent = `🤖 FALLA DE TRADUCCIÓN (${sumFingers} dedos)`;
+      $('#statTension').style.color = 'var(--err)';
     }
   }
+
+  const statFingersEl = $('#statFingers');
+  if (statFingersEl) statFingersEl.textContent = String(currentSumFingers);
+  lastSumFingers = currentSumFingers;
 
   // 9. Soltar contacto (touch.down = 0): Levantar los dedos del teléfono
   // Disparo (One-shot) pago.mp3 seguido del silencio/atenuación transaccional de bosque.flac

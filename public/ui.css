@@ -169,6 +169,26 @@ section.interactive-arena {
   transform: translate(3px, -3px) skewX(2deg);
 }
 
+.glitch-banner {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.92);
+  background: rgba(22, 6, 28, 0.94); border: 2px solid #ec4899;
+  border-radius: var(--r-m); padding: 18px 28px; text-align: center;
+  box-shadow: 0 0 50px rgba(236, 72, 153, 0.7), 0 0 25px rgba(168, 85, 247, 0.5);
+  pointer-events: none; z-index: 100; opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+  backdrop-filter: blur(12px);
+}
+.glitch-banner.active {
+  opacity: 1; transform: translate(-50%, -50%) scale(1);
+}
+.glitch-title {
+  font-family: var(--mono); font-size: 16px; font-weight: 800; letter-spacing: 0.12em;
+  color: #f472b6; margin-bottom: 6px; text-shadow: 0 0 12px rgba(244,114,182,0.9);
+}
+.glitch-sub {
+  font-size: 12px; color: #fbcfe8; max-width: 440px; line-height: 1.5;
+}
+
 /* Lienzos 2D fuera del mundo 3D: CERO cortes por Z-buffer */
 #particlesCanvas, #hudCanvas { 
   position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;

@@ -86,8 +86,10 @@
   <div id="run">
     <div id="bar"><span id="st" role="status" aria-live="polite">Conectando…</span><span id="info"></span></div>
     
-    <div style="background: rgba(163,230,53,0.12); border: 1px solid rgba(163,230,53,0.3); border-radius: var(--r-s); padding: 8px 12px; font-size: 12px; color: #d9f99d; text-align: center;">
-      📱 <b>Inclina</b> el teléfono en el aire para volar · <b>Mantén el botón</b> o toca para fecundar flores
+    <!-- INDICADOR VISUAL CLARO DE DEDOS Y GESTOS -->
+    <div id="touchStatePill" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); font-size:12px; font-weight:600; text-align:center; transition: all 180ms ease;">
+      <span id="touchStateIcon">🌱</span>
+      <span id="touchStateText">En reposo · Toca con 1, 2 o 3 dedos</span>
     </div>
 
     <!-- BOTÓN GIGANTE TÁCTIL DE FECUNDACIÓN -->
@@ -97,11 +99,18 @@
       <span class="btn-sub">✨ Fecunda el prado y libera el enjambre de polen</span>
     </button>
 
+    <!-- CONTROL RÁPIDO DE ZOOM: ALEJAR / NORMAL / ACERCAR -->
+    <div style="display:flex; gap:6px; width:100%;">
+      <button id="zoomOutPill" type="button" style="flex:1; min-height:36px; padding:6px; font-size:11px; font-weight:600; background:rgba(255,255,255,0.08); border:1px solid var(--line); border-radius:var(--r-s); color:#d4e5d7; cursor:pointer;">🔭 Alejar</button>
+      <button id="zoomNormalPill" type="button" style="flex:1; min-height:36px; padding:6px; font-size:11px; font-weight:600; background:rgba(255,255,255,0.08); border:1px solid var(--line); border-radius:var(--r-s); color:#d4e5d7; cursor:pointer;">🐝 FPV Normal</button>
+      <button id="zoomInPill" type="button" style="flex:1; min-height:36px; padding:6px; font-size:11px; font-weight:600; background:rgba(255,255,255,0.08); border:1px solid var(--line); border-radius:var(--r-s); color:#d4e5d7; cursor:pointer;">👁️ Acercar UV</button>
+    </div>
+
     <!-- SUPERFICIE DE VUELO Y POLINIZACIÓN TÁCTIL -->
     <div id="surface">
       <canvas id="cv" aria-hidden="true"></canvas>
       <div id="hud" aria-hidden="true"></div>
-      <div id="hint">🌿 Desliza aquí con 1 o 2 dedos<br><br>✨ La abeja fecundará flores donde toques</div>
+      <div id="hint">🌿 Desliza con 1 dedo para fecundar<br>🔍 Junta/separa 2 dedos para Zoom<br>🤖 Toca con 3 dedos para Error Maquínico</div>
     </div>
 
     <div id="motionBar">
@@ -111,8 +120,8 @@
     <div class="msg" id="err2" role="alert"></div>
   </div>
 
-<script src="config.js?v=20261116_2315"></script>
-<script src="tacto.js?v=20261116_2315"></script>
+<script src="config.js?v=20261118_1340"></script>
+<script src="tacto.js?v=20261118_1340"></script>
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
@@ -193,16 +202,80 @@ function fit() { const d = devicePixelRatio || 1, r = surf.getBoundingClientRect
 addEventListener('resize', fit);
 
 function setTouches(p, r) {
-  cur = { n: p.length, p, ar: r3(r.width / r.height) };
+  cur = { n: p.length, p, ar: r3(r.width / (r.height || 1)) };
   for (const z of p) {
     S.f.n++; S.f.min = Math.min(S.f.min, z.f); S.f.max = Math.max(S.f.max, z.f);
     S.d.n++; S.d.min = Math.min(S.d.min, z.d); S.d.max = Math.max(S.d.max, z.d);
   }
   if (p.length) $('#hint').style.display = 'none';
+  updateTouchStateUI(cur.n);
   if (cur.n !== lastN) { lastN = cur.n; sendTouch(1); } // cambios de cantidad de dedos: entrega garantizada
   else if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; sendTouch(0); }); } // movimiento: hasta ~60 por segundo
 }
 const sendTouch = qos => pub('touch', { t: Date.now(), n: cur.n, ar: cur.ar, p: cur.p.map(z => ({ i: z.i, x: r3(z.x), y: r3(z.y), f: r3(z.f), d: Math.round(z.d) })) }, qos);
+
+function updateTouchStateUI(n) {
+  const pill = $('#touchStatePill');
+  const icon = $('#touchStateIcon');
+  const text = $('#touchStateText');
+  if (!pill || !text) return;
+  if (n === 0) {
+    pill.style.background = 'rgba(255,255,255,0.06)';
+    pill.style.borderColor = 'rgba(255,255,255,0.12)';
+    if (icon) icon.textContent = '🌱';
+    text.textContent = 'En reposo · Toca con 1, 2 o 3 dedos';
+    text.style.color = 'var(--mut)';
+  } else if (n === 1) {
+    pill.style.background = 'rgba(163,230,53,0.18)';
+    pill.style.borderColor = '#a3e635';
+    if (icon) icon.textContent = '🌸';
+    text.textContent = '1 DEDO: Fecundando flores delicadamente';
+    text.style.color = '#bef264';
+  } else if (n === 2) {
+    pill.style.background = 'rgba(56,189,248,0.22)';
+    pill.style.borderColor = '#38bdf8';
+    if (icon) icon.textContent = '🔍';
+    text.textContent = '2 DEDOS: Control de Zoom (Pellizco In / Out)';
+    text.style.color = '#7dd3fc';
+  } else {
+    pill.style.background = 'rgba(236,72,153,0.35)';
+    pill.style.borderColor = '#ec4899';
+    if (icon) icon.textContent = '🤖';
+    text.textContent = `🚨 ${n} DEDOS: ¡FALLA DE TRADUCCIÓN! (ROBOT)`;
+    text.style.color = '#f472b6';
+    if (navigator.vibrate) try { navigator.vibrate([70, 50, 70]); } catch {}
+  }
+}
+
+// Botones directos de Zoom para probar Alejar (Panorámica), Normal y Acercar (UV)
+const zoomOutPill = $('#zoomOutPill');
+const zoomNormalPill = $('#zoomNormalPill');
+const zoomInPill = $('#zoomInPill');
+
+if (zoomOutPill) {
+  zoomOutPill.onclick = () => {
+    // Distancia pequeña = Zoom Out (Panorámica ~0.72)
+    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: 0.47, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: 0.53, y: 0.5, f: 0.8, d: 30 }] }, 1);
+    updateTouchStateUI(2);
+    setTimeout(() => { if (cur.n === 0) updateTouchStateUI(0); }, 1500);
+  };
+}
+if (zoomNormalPill) {
+  zoomNormalPill.onclick = () => {
+    // Distancia media = FPV Normal (~1.15)
+    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: 0.38, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: 0.62, y: 0.5, f: 0.8, d: 30 }] }, 1);
+    updateTouchStateUI(2);
+    setTimeout(() => { if (cur.n === 0) updateTouchStateUI(0); }, 1500);
+  };
+}
+if (zoomInPill) {
+  zoomInPill.onclick = () => {
+    // Distancia grande = Zoom In (Macro UV ~2.40)
+    pub('touch', { t: Date.now(), n: 2, ar: 1, p: [{ i: 1, x: 0.15, y: 0.5, f: 0.8, d: 30 }, { i: 2, x: 0.85, y: 0.5, f: 0.8, d: 30 }] }, 1);
+    updateTouchStateUI(2);
+    setTimeout(() => { if (cur.n === 0) updateTouchStateUI(0); }, 1500);
+  };
+}
 
 // Dedos (Touch Events: traen presión y radio de contacto)
 const slots = new Map(); // identifier -> casilla 1..5 (estable mientras el dedo siga apoyado)
@@ -279,17 +352,14 @@ function startFecundarBtn(e) {
 
   const r = surf.getBoundingClientRect();
   // Primer pulso inmediato
-  setTouches([{ i: 1, x: 0.5, y: 0.5, f: 0.88, d: 48 }], r);
+  setTouches([{ i: 1, x: 0.5, y: 0.5, f: 0.85, d: 36 }], r);
 
   clearInterval(fecundarInterval);
   fecundarInterval = setInterval(() => {
     if (!isBtnFecundando) return;
-    simulatedBtnTouchAngle += 0.15;
-    // Órbita sutil para fecundar en estela orgánica alrededor del cursor
-    const jx = 0.5 + Math.cos(simulatedBtnTouchAngle) * 0.08;
-    const jy = 0.5 + Math.sin(simulatedBtnTouchAngle) * 0.08;
-    setTouches([{ i: 1, x: r3(jx), y: r3(jy), f: 0.88, d: 48 }], surf.getBoundingClientRect());
-  }, 40);
+    // Mantiene el punto centrado y delicado sin descontrol
+    setTouches([{ i: 1, x: 0.5, y: 0.5, f: 0.85, d: 36 }], surf.getBoundingClientRect());
+  }, 110);
 }
 
 function stopFecundarBtn(e) {
